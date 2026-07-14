@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typing Test Simulator — DSSSB / SSC Practice</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============================================================
+     TOP NAV (visible on Home screen)
+     ============================================================ -->
+<header class="topnav" id="topnav">
+  <div class="brand">
+    <span class="brand-mark">TS</span>
+    <span class="brand-text">Typing<strong>Simulator</strong></span>
+  </div>
+  <div class="topnav-actions">
+    <button class="icon-btn" id="btnSettingsNav" title="Settings">⚙</button>
+  </div>
+</header>
+
+<!-- ============================================================
+     SCREEN 0 — EXAM CATEGORY CATALOGUE (new landing screen)
+     ============================================================ -->
+<main class="screen catalogue-screen" id="catalogueScreen">
+
+  <section class="hero">
+    <h1>Pick your exam. Practice its exact typing format.</h1>
+    <p class="hero-sub">Every exam has its own passage set and pattern. Choose one below — more exams get added here over time.</p>
+  </section>
+
+  <section class="category-section">
+    <div class="section-head">
+      <h2>Exam Categories</h2>
+      <span class="passage-count" id="categoryCount">0 categories</span>
+    </div>
+    <div class="category-grid" id="categoryGrid"><!-- cards injected by JS --></div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     SCREEN 1 — CATEGORY HOME / PASSAGE LIBRARY
+     ============================================================ -->
+<main class="screen home-screen" id="homeScreen" hidden>
+
+  <button class="back-link" id="btnBackToCatalogue">← All Exam Categories</button>
+
+  <section class="hero">
+    <h1 id="categoryHeroTitle">Practice typing the way the exam actually tests it.</h1>
+    <p class="hero-sub" id="categoryHeroSub">Offline. No timer tricks, no internet dependency — just the exam's own net‑speed formula, applied honestly to every keystroke.</p>
+    <div class="hero-actions">
+      <button class="btn btn-primary" id="btnRandomTest">▶ Start Random Test</button>
+      <button class="btn btn-secondary" id="btnDownloadAllPdf" title="Combines all passages into one A4 PDF you can print for Paper‑to‑Screen practice">⬇ Download All Passages (PDF)</button>
+      <button class="btn btn-secondary" id="btnCustomPassage" title="Paste any text — weak words, your own material — and type it here">✏️ Custom Passage</button>
+      <div class="search-wrap">
+        <input type="text" id="searchBox" placeholder="Search passages by title or difficulty…" autocomplete="off">
+      </div>
+    </div>
+  </section>
+
+  <section class="stats-strip">
+    <div class="stat-card">
+      <span class="stat-label">Recent Tests</span>
+      <span class="stat-value" id="statRecent">0</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Best Net WPM</span>
+      <span class="stat-value" id="statBest">0</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Average WPM</span>
+      <span class="stat-value" id="statAvgWpm">0</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Average Accuracy</span>
+      <span class="stat-value" id="statAvgAcc">0%</span>
+    </div>
+  </section>
+
+  <section class="passage-section">
+    <div class="section-head">
+      <h2>Passage Library</h2>
+      <span class="passage-count" id="passageCount">0 passages</span>
+    </div>
+    <div class="passage-grid" id="passageGrid"><!-- cards injected by JS --></div>
+
+  </section>
+
+</main>
+
+<!-- ============================================================
+     SCREEN 2 — TYPING TEST
+     ============================================================ -->
+<main class="screen test-screen" id="testScreen" hidden>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="icon-btn" id="btnExit" title="Exit test">✕</button>
+      <span class="toolbar-title" id="testTitle">Typing Test</span>
+    </div>
+
+    <div class="toolbar-stats">
+      <div class="tstat"><span class="tstat-label">Time</span><span class="tstat-value" id="liveTimer">00:00</span></div>
+      <div class="tstat"><span class="tstat-label">Gross WPM</span><span class="tstat-value" id="liveGross">0</span></div>
+      <div class="tstat"><span class="tstat-label">Net WPM</span><span class="tstat-value" id="liveNet">0</span></div>
+      <div class="tstat"><span class="tstat-label">Accuracy</span><span class="tstat-value" id="liveAcc">100%</span></div>
+      <div class="tstat"><span class="tstat-label">Mistakes</span><span class="tstat-value" id="liveMistakes">0</span></div>
+    </div>
+
+    <div class="toolbar-right">
+      <button class="icon-btn" id="btnSound" title="Toggle sound">🔊</button>
+      <button class="icon-btn" id="btnFullscreen" title="Fullscreen">⛶</button>
+      <button class="icon-btn" id="btnRestart" title="Restart test">⟳</button>
+    </div>
+  </div>
+
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="test-body">
+    <div class="passage-pane" id="passagePane">
+      <div class="pane-label">Original Passage</div>
+      <div class="passage-text" id="passageText"></div>
+    </div>
+
+    <div class="typing-pane">
+      <div class="pane-label">Your Typing <span id="paperScreenNotice" class="hint" hidden>— passage hidden (Paper‑to‑Screen mode)</span></div>
+      <textarea id="typingArea" class="typing-area" placeholder="Start typing here… timer begins on your first keystroke." spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+    </div>
+  </div>
+
+  <div class="test-footer">
+    <button class="btn btn-secondary" id="btnSubmitEarly">Submit Test</button>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     SCREEN 3 — RESULT
+     ============================================================ -->
+<main class="screen result-screen" id="resultScreen" hidden>
+
+  <div class="result-header">
+    <div class="result-badge" id="resultBadge">PASS</div>
+    <h1 id="resultTitleText">Test Complete</h1>
+    <p class="result-sub" id="resultSub"></p>
+  </div>
+
+  <div class="result-grid">
+    <div class="result-card highlight">
+      <span class="rc-label">Net Speed</span>
+      <span class="rc-value" id="resNet">0 WPM</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Gross Speed</span>
+      <span class="rc-value" id="resGross">0 WPM</span>
+    </div>
+    <div class="result-card" id="resMarksCard" hidden>
+      <span class="rc-label">Marks</span>
+      <span class="rc-value" id="resMarks">0 / 25</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Accuracy</span>
+      <span class="rc-value" id="resAcc">0%</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Error %</span>
+      <span class="rc-value" id="resErrorPct">0%</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Full Mistakes</span>
+      <span class="rc-value" id="resFull">0</span>
+    </div>
+    <div class="result-card" id="resHalfCard">
+      <span class="rc-label">Half Mistakes</span>
+      <span class="rc-value" id="resHalf">0</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Omission Words</span>
+      <span class="rc-value" id="resOmission">0</span>
+    </div>
+    <div class="result-card info-only" id="resUntypedCard" hidden>
+      <span class="rc-label">Untyped (Time Over)</span>
+      <span class="rc-value" id="resUntyped">0</span>
+      <span class="rc-note">Not penalized</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Error Units</span>
+      <span class="rc-value" id="resErrorUnits">0</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Total Penalty</span>
+      <span class="rc-value" id="resPenalty">0</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Given Keystrokes</span>
+      <span class="rc-value" id="resGivenKeys">0</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Typed Keystrokes</span>
+      <span class="rc-value" id="resChars">0</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Words Typed</span>
+      <span class="rc-value" id="resWords">0</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Backspace Used</span>
+      <span class="rc-value" id="resBackspace">0</span>
+    </div>
+    <div class="result-card">
+      <span class="rc-label">Time Taken</span>
+      <span class="rc-value" id="resTime">00:00</span>
+    </div>
+  </div>
+
+  <div class="result-actions">
+    <button class="btn btn-secondary" id="btnExportTxt">Export TXT</button>
+    <button class="btn btn-secondary" id="btnExportPdf">Export PDF (Print)</button>
+    <button class="btn btn-secondary" id="btnRetryTest">Retry Same Passage</button>
+    <button class="btn btn-primary" id="btnBackHome">Back to Home</button>
+  </div>
+
+  <section class="calc-section">
+    <h2>Show Complete Calculation</h2>
+    <div class="calc-box" id="calcSteps"><!-- populated by JS with the evaluator's own formula chain --></div>
+  </section>
+
+  <section class="diagnostic-section" id="diagnosticSection" hidden>
+    <h2>Diagnostic Report</h2>
+    <p class="hero-sub">Patterns pulled from this attempt's mistakes — not a generic tip, just what actually went wrong.</p>
+    <div class="diagnostic-grid" id="diagnosticGrid"><!-- tip cards injected by JS --></div>
+  </section>
+
+  <section class="weak-words-section" id="weakWordsSection" hidden>
+    <div class="section-head">
+      <h2>Weak Words Drill</h2>
+      <button class="btn btn-secondary" id="btnCopyWeakWords">📋 Copy Weak Words</button>
+    </div>
+    <p class="hero-sub">These are the exact words you got wrong this attempt — worth a few rounds of focused practice.</p>
+    <div class="weak-words-chips" id="weakWordsChips"></div>
+  </section>
+
+  <section class="comparison-section">
+    <h2>Passage Comparison</h2>
+
+    <div class="legend">
+      <span class="legend-item"><i class="dot correct"></i> Correct</span>
+      <span class="legend-item"><i class="dot incorrect"></i> Incorrect</span>
+      <span class="legend-item"><i class="dot missing"></i> Missing</span>
+      <span class="legend-item"><i class="dot extra"></i> Extra</span>
+      <span class="legend-item"><i class="dot half"></i> Half Mistake</span>
+      <span class="legend-item"><i class="dot untyped"></i> Untyped (time over)</span>
+    </div>
+    <div class="compare-grid">
+      <div class="compare-col">
+        <div class="pane-label">Original</div>
+        <div class="compare-text" id="cmpOriginal"></div>
+      </div>
+      <div class="compare-col">
+        <div class="pane-label">Your Typing</div>
+        <div class="compare-text" id="cmpTyped"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="error-table-section">
+    <h2>Detailed Error Table</h2>
+    <div class="table-wrap">
+      <table class="error-table" id="errorTable">
+        <thead>
+          <tr><th>#</th><th>Expected</th><th>Typed</th><th>Error Type</th><th>Position</th><th>Penalty</th></tr>
+        </thead>
+        <tbody id="errorTableBody"></tbody>
+      </table>
+      <p class="empty-note" id="noErrorsNote" hidden>No errors recorded — clean typing.</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     SETTINGS MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="settingsOverlay" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Settings</h2>
+      <button class="icon-btn" id="btnCloseSettings">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <div class="setting-group">
+        <label>Theme</label>
+        <div class="seg-control" id="themeControl">
+          <button data-value="dark" class="seg-btn active">Dark</button>
+          <button data-value="light" class="seg-btn">Light</button>
+          <button data-value="blue" class="seg-btn">Blue</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Test Mode</label>
+        <div class="seg-control" id="modeControl">
+          <button data-value="screen" class="seg-btn active">Screen‑to‑Screen</button>
+          <button data-value="paper" class="seg-btn">Paper‑to‑Screen</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Timer Duration</label>
+        <div class="seg-control" id="timerControl">
+          <button data-value="5" class="seg-btn">5 min</button>
+          <button data-value="10" class="seg-btn active">10 min</button>
+          <button data-value="15" class="seg-btn">15 min</button>
+          <button data-value="20" class="seg-btn">20 min</button>
+        </div>
+        <div class="custom-timer-row">
+          <label class="inline-label">Custom (minutes)</label>
+          <input type="number" id="customTimer" min="1" max="60" placeholder="e.g. 3">
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Backspace</label>
+        <div class="seg-control" id="backspaceControl">
+          <button data-value="enabled" class="seg-btn active">Enabled</button>
+          <button data-value="disabled" class="seg-btn">Disabled</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Auto Highlight (live correct/incorrect coloring)</label>
+        <div class="seg-control" id="autoHighlightControl">
+          <button data-value="on" class="seg-btn active">On</button>
+          <button data-value="off" class="seg-btn">Off</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Trailing Time-Over Leniency</label>
+        <div class="seg-control" id="trailingLeniencyControl">
+          <button data-value="on" class="seg-btn active">On</button>
+          <button data-value="off" class="seg-btn">Off</button>
+        </div>
+        <p class="setting-note">On: the stretch of passage you never reached before time ran out isn't penalized (shown separately as "Untyped"). A word skipped in the middle of the passage — with more typed after it — always counts either way, since that's a real mistake, not a time issue.</p>
+      </div>
+
+      <div class="setting-group">
+        <label>Qualifying Net Speed (WPM)</label>
+        <input type="number" id="qualifyWpm" min="1" max="200" value="35">
+      </div>
+
+      <div class="setting-group two-col">
+        <div>
+          <label>Passage Font Size (px)</label>
+          <input type="number" id="passageFontSize" min="12" max="32" value="18">
+        </div>
+        <div>
+          <label>Typing Font Size (px)</label>
+          <input type="number" id="typingFontSize" min="12" max="32" value="18">
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Font Family</label>
+        <select id="fontFamily">
+          <option value="mono">Monospace (Consolas)</option>
+          <option value="notepad">Notepad (Courier New)</option>
+          <option value="sans">Sans (Segoe UI)</option>
+          <option value="serif">Serif (Georgia)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label>Sound (UI beeps + exam‑hall keystroke clicks)</label>
+        <div class="seg-control" id="soundControl">
+          <button data-value="on" class="seg-btn active">On</button>
+          <button data-value="off" class="seg-btn">Off</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Exam Hall Ambience (your own recording)</label>
+        <div class="seg-control" id="ambienceControl">
+          <button data-value="off" class="seg-btn active">Off</button>
+          <button data-value="on" class="seg-btn">On</button>
+        </div>
+        <div class="ambience-file-row">
+          <input type="file" id="ambienceFileInput" accept="audio/*">
+          <button class="btn btn-secondary" id="btnPreviewAmbience" disabled>▶ Preview</button>
+          <button class="btn btn-danger-outline" id="btnRemoveAmbience" disabled>Remove</button>
+        </div>
+        <p class="setting-note" id="ambienceFileStatus">No file selected — plays in a loop, quietly, during a test.</p>
+        <div class="ambience-volume-row">
+          <label class="inline-label">Volume</label>
+          <input type="range" id="ambienceVolume" min="0" max="100" value="30">
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <button class="btn btn-danger-outline" id="btnClearHistory">Clear All Saved History</button>
+      </div>
+
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-primary" id="btnSaveSettings">Save & Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CUSTOM PASSAGE MODAL — paste your own text (weak words, any
+     material) and type it using the same test engine and scoring.
+     ============================================================ -->
+<div class="modal-overlay" id="customPassageOverlay" hidden>
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <h2>Custom Passage Practice</h2>
+      <button class="icon-btn" id="btnCloseCustomPassage">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="setting-group">
+        <label>Title (optional)</label>
+        <input type="text" id="customPassageTitle" placeholder="e.g. My Weak Words Drill">
+      </div>
+
+      <div class="setting-group">
+        <label>Passage Text</label>
+        <textarea id="customPassageText" class="notepad-textarea" placeholder="Paste or type anything here — your weak words, a paragraph from a book, anything you want to practice…" spellcheck="false"></textarea>
+        <p class="setting-note" id="customPassageMeta">0 words · 0 characters</p>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-secondary" id="btnClearCustomPassage">Clear</button>
+      <button class="btn btn-primary" id="btnStartCustomPassage">▶ Start Typing Test</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PAPER-TO-SCREEN COUNTDOWN OVERLAY
+     ============================================================ -->
+<div class="modal-overlay" id="countdownOverlay" hidden>
+  <div class="countdown-box">
+    <p class="countdown-label">Memorize / read the passage. Typing screen begins in</p>
+    <div class="countdown-number" id="countdownNumber">10</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PRINT-ALL CONTAINER (used only when generating the combined
+     "Download All Passages" PDF — hidden on screen, populated and
+     shown right before window.print() is called)
+     ============================================================ -->
+<div id="printAllContainer" class="print-all-container" hidden></div>
+
+<script src="passages.js"></script>
+<script src="passages-dp-hcm.js"></script>
+<script src="passages-dsssb-mitra.js"></script>
+<script src="evaluators.js"></script>
+<script src="categories.js"></script>
+<script src="diagnostics.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

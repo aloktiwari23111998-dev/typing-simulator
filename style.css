@@ -1,0 +1,567 @@
+/* ==========================================================================
+   style.css — Typing Test Simulator
+   Themes are driven by [data-theme] on <html>: dark | light | blue
+   ========================================================================== */
+
+:root{
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --shadow-soft: 0 8px 30px rgba(0,0,0,0.25);
+  --font-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-mono: Consolas, "Courier New", monospace;
+  --font-notepad: "Courier New", Courier, monospace;
+  --font-ui: var(--font-sans);
+}
+
+/* ---------- THEME: DARK (default) ---------- */
+html[data-theme="dark"]{
+  --bg: #0B0F14;
+  --bg-grad: radial-gradient(circle at 20% -10%, #142132 0%, #0B0F14 55%);
+  --surface: rgba(255,255,255,0.045);
+  --surface-solid: #131A22;
+  --surface-border: rgba(255,255,255,0.08);
+  --text-primary: #E7ECF3;
+  --text-secondary: #8B98AA;
+  --accent: #4F8EF7;
+  --accent-soft: rgba(79,142,247,0.15);
+  --success: #2FD180;
+  --success-soft: rgba(47,209,128,0.15);
+  --danger: #FF5D6C;
+  --danger-soft: rgba(255,93,108,0.15);
+  --warning: #F5B942;
+  --warning-soft: rgba(245,185,66,0.16);
+}
+
+/* ---------- THEME: LIGHT ---------- */
+html[data-theme="light"]{
+  --bg: #F4F6F9;
+  --bg-grad: radial-gradient(circle at 20% -10%, #EAF0FB 0%, #F4F6F9 55%);
+  --surface: rgba(255,255,255,0.7);
+  --surface-solid: #FFFFFF;
+  --surface-border: rgba(15,23,42,0.08);
+  --text-primary: #1A2233;
+  --text-secondary: #5B6576;
+  --accent: #2E6BE6;
+  --accent-soft: rgba(46,107,230,0.10);
+  --success: #17A567;
+  --success-soft: rgba(23,165,103,0.12);
+  --danger: #E23B4D;
+  --danger-soft: rgba(226,59,77,0.10);
+  --warning: #C77F0A;
+  --warning-soft: rgba(199,127,10,0.12);
+}
+
+/* ---------- THEME: BLUE ---------- */
+html[data-theme="blue"]{
+  --bg: #06121F;
+  --bg-grad: radial-gradient(circle at 20% -10%, #0C2A47 0%, #06121F 55%);
+  --surface: rgba(255,255,255,0.05);
+  --surface-solid: #0D1F32;
+  --surface-border: rgba(120,180,255,0.14);
+  --text-primary: #DCEBFF;
+  --text-secondary: #7FA3C9;
+  --accent: #3FC1FF;
+  --accent-soft: rgba(63,193,255,0.16);
+  --success: #34E4A8;
+  --success-soft: rgba(52,228,168,0.14);
+  --danger: #FF6B7A;
+  --danger-soft: rgba(255,107,122,0.14);
+  --warning: #FFC24B;
+  --warning-soft: rgba(255,194,75,0.14);
+}
+
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
+
+/* The `hidden` attribute must always win over any component's own
+   `display` rule (e.g. .topnav{display:flex}) — without this, an
+   element with an explicit display value stays visible even when
+   JS sets element.hidden = true. */
+[hidden]{ display: none !important; }
+
+body{
+  margin:0;
+  font-family: var(--font-ui);
+  background: var(--bg-grad), var(--bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  min-height:100vh;
+}
+
+button{ font-family: inherit; cursor:pointer; }
+input, select, textarea{ font-family: inherit; }
+
+::selection{ background: var(--accent-soft); }
+
+/* ==========================================================================
+   TOP NAV
+   ========================================================================== */
+.topnav{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 20px clamp(20px, 5vw, 64px);
+}
+.brand{ display:flex; align-items:center; gap:10px; }
+.brand-mark{
+  width:34px; height:34px; border-radius:10px;
+  background: linear-gradient(135deg, var(--accent), transparent);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:13px; color:#fff;
+  border:1px solid var(--surface-border);
+}
+.brand-text{ font-size:17px; letter-spacing:0.2px; }
+.brand-text strong{ color: var(--accent); }
+
+.icon-btn{
+  width:38px; height:38px; border-radius:50%;
+  border:1px solid var(--surface-border);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size:16px;
+  display:flex; align-items:center; justify-content:center;
+  transition: transform .15s ease, background .15s ease;
+}
+.icon-btn:hover{ background: var(--accent-soft); transform: translateY(-1px); }
+
+/* ==========================================================================
+   GENERIC
+   ========================================================================== */
+.screen{ padding: 0 clamp(20px, 5vw, 64px) 60px; max-width:1280px; margin:0 auto; }
+
+.btn{
+  border:none; border-radius: var(--radius-sm);
+  padding: 12px 22px; font-size:14.5px; font-weight:600;
+  transition: transform .15s ease, filter .15s ease, background .15s ease;
+}
+.btn:active{ transform: scale(0.97); }
+.btn-primary{ background: var(--accent); color:#08131F; }
+.btn-primary:hover{ filter: brightness(1.08); }
+.btn-secondary{
+  background: var(--surface); color: var(--text-primary);
+  border:1px solid var(--surface-border);
+}
+.btn-secondary:hover{ background: var(--accent-soft); }
+.btn-danger-outline{
+  background: transparent; color: var(--danger);
+  border:1px solid var(--danger); padding:10px 18px;
+}
+.btn-danger-outline:hover{ background: var(--danger-soft); }
+
+/* ==========================================================================
+   HOME SCREEN
+   ========================================================================== */
+.hero{
+  padding: 40px 0 28px;
+  border-bottom: 1px solid var(--surface-border);
+  margin-bottom: 28px;
+}
+.hero h1{
+  font-size: clamp(26px, 4vw, 40px);
+  line-height:1.15; max-width: 720px; margin:0 0 14px;
+  letter-spacing:-0.3px;
+}
+.hero-sub{ color: var(--text-secondary); max-width:560px; margin:0 0 26px; font-size:15px; }
+.hero-actions{ display:flex; flex-wrap:wrap; gap:16px; align-items:center; }
+.search-wrap{ flex:1; min-width:240px; }
+#searchBox{
+  width:100%; padding:12px 16px; border-radius: var(--radius-sm);
+  border:1px solid var(--surface-border); background: var(--surface);
+  color: var(--text-primary); font-size:14px; outline:none;
+}
+#searchBox:focus{ border-color: var(--accent); }
+
+.stats-strip{
+  display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-bottom:36px;
+}
+.stat-card{
+  background: var(--surface); border:1px solid var(--surface-border);
+  border-radius: var(--radius-md); padding:18px 20px;
+  backdrop-filter: blur(10px);
+  display:flex; flex-direction:column; gap:6px;
+}
+.stat-label{ font-size:12.5px; color: var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; }
+.stat-value{ font-size:26px; font-weight:700; }
+
+.section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px; }
+.section-head h2{ font-size:20px; margin:0; }
+.passage-count{ color: var(--text-secondary); font-size:13px; }
+
+.passage-grid{
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap:16px;
+}
+.passage-card{
+  background: var(--surface); border:1px solid var(--surface-border);
+  border-radius: var(--radius-md); padding:18px;
+  backdrop-filter: blur(10px);
+  display:flex; flex-direction:column; gap:10px;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.passage-card:hover{ transform: translateY(-3px); border-color: var(--accent); }
+.pc-top{ display:flex; justify-content:space-between; align-items:center; }
+.pc-num{ font-size:12px; color: var(--text-secondary); }
+.pc-diff{
+  font-size:11px; padding:3px 9px; border-radius:20px; font-weight:600;
+  background: var(--accent-soft); color: var(--accent);
+}
+.pc-diff.Hard{ background: var(--danger-soft); color: var(--danger); }
+.pc-diff.Moderate{ background: var(--warning-soft); color: var(--warning); }
+.pc-diff.Easy{ background: var(--success-soft); color: var(--success); }
+.pc-title{ font-size:16px; font-weight:600; margin:0; }
+.pc-meta{ font-size:12.5px; color: var(--text-secondary); display:flex; gap:14px; }
+.pc-start{
+  margin-top:6px; align-self:flex-start;
+  background: var(--accent-soft); color: var(--accent);
+  border:none; padding:8px 16px; border-radius: var(--radius-sm);
+  font-weight:600; font-size:13px;
+}
+.pc-start:hover{ background: var(--accent); color:#08131F; }
+
+/* ==========================================================================
+   CATEGORY CATALOGUE (landing screen — one card per exam)
+   ========================================================================== */
+.category-section{ margin-top:8px; }
+
+.category-grid{
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap:18px;
+}
+.category-card{
+  background: var(--surface); border:1px solid var(--surface-border);
+  border-radius: var(--radius-lg); padding:26px;
+  backdrop-filter: blur(10px);
+  display:flex; flex-direction:column; gap:12px; text-align:left;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.category-card:hover{ transform: translateY(-4px); border-color: var(--accent); }
+.cc-icon{
+  width:52px; height:52px; border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px;
+}
+.cc-title{ font-size:19px; font-weight:700; margin:0; }
+.cc-subtitle{ font-size:12px; color: var(--accent); font-weight:600; letter-spacing:0.3px; }
+.cc-desc{ font-size:13.5px; color: var(--text-secondary); line-height:1.55; flex:1; }
+.cc-start{
+  margin-top:4px; align-self:flex-start;
+  background: var(--accent-soft); color: var(--accent);
+  border:none; padding:10px 18px; border-radius: var(--radius-sm);
+  font-weight:700; font-size:13.5px;
+}
+.cc-start:hover{ background: var(--accent); color:#08131F; }
+
+.back-link{
+  background:none; border:none; color: var(--accent);
+  font-size:13.5px; font-weight:600; padding:0; margin: 24px 0 -6px;
+  cursor:pointer;
+}
+.back-link:hover{ text-decoration: underline; }
+
+/* ==========================================================================
+   TEST SCREEN
+   ========================================================================== */
+.test-screen{ padding-top:18px; }
+.toolbar{
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;
+  background: var(--surface); border:1px solid var(--surface-border);
+  border-radius: var(--radius-md); padding:12px 18px; backdrop-filter: blur(10px);
+  margin-bottom:14px;
+}
+.toolbar-left{ display:flex; align-items:center; gap:12px; }
+.toolbar-title{ font-weight:600; font-size:14.5px; }
+.toolbar-stats{ display:flex; gap:22px; flex-wrap:wrap; }
+.tstat{ display:flex; flex-direction:column; align-items:center; min-width:60px; }
+.tstat-label{ font-size:10.5px; color: var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; }
+.tstat-value{ font-size:17px; font-weight:700; }
+.toolbar-right{ display:flex; gap:8px; }
+
+.progress-track{
+  height:6px; border-radius:6px; background: var(--surface); overflow:hidden; margin-bottom:18px;
+  border:1px solid var(--surface-border);
+}
+.progress-fill{ height:100%; width:0%; background: var(--accent); transition: width .2s ease; }
+
+.test-body{ display:flex; flex-direction:column; gap:18px; }
+.passage-pane{
+  background: var(--surface); border:1px solid var(--surface-border);
+  border-radius: var(--radius-md); padding:18px; backdrop-filter: blur(10px);
+  max-height: 260px; overflow-y:auto;
+}
+.typing-pane{
+  background: var(--surface); border:1px solid var(--surface-border);
+  border-radius: var(--radius-md); padding:18px; backdrop-filter: blur(10px);
+  min-height: 340px; display:flex; flex-direction:column;
+}
+/* Paper-to-Screen mode: passage-pane is set [hidden] entirely (not just
+   invisible) so the typing pane alone fills the width, matching a plain
+   exam typing box with nothing else on screen. */
+.pane-label{ font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color: var(--text-secondary); margin-bottom:12px; }
+.hint{ text-transform:none; letter-spacing:0; color: var(--warning); }
+
+.passage-text{
+  line-height:1.9; font-size:18px; font-family: var(--font-mono);
+  white-space: pre-wrap;
+}
+.passage-text .word{ padding:1px 1px; border-radius:3px; }
+.passage-text .word.current{ background: var(--accent-soft); outline:1px solid var(--accent); }
+.passage-text .word.correct{ color: var(--success); }
+.passage-text .word.incorrect{ color: var(--danger); text-decoration: underline wavy var(--danger); }
+.passage-text .word.pending{ color: var(--text-secondary); }
+
+.typing-area{
+  flex:1; resize:none; border:none; outline:none;
+  background: transparent; color: var(--text-primary);
+  font-family: var(--font-mono); font-size:18px; line-height:1.9;
+}
+
+.test-footer{ display:flex; justify-content:flex-end; margin-top:16px; }
+
+/* ==========================================================================
+   RESULT SCREEN
+   ========================================================================== */
+.result-screen{ padding-top:36px; }
+.result-header{ text-align:center; margin-bottom:32px; }
+.result-badge{
+  display:inline-block; padding:8px 26px; border-radius:30px;
+  font-weight:800; font-size:14px; letter-spacing:1.2px; margin-bottom:16px;
+}
+.result-badge.pass{ background: var(--success-soft); color: var(--success); border:1px solid var(--success); }
+.result-badge.fail{ background: var(--danger-soft); color: var(--danger); border:1px solid var(--danger); }
+.result-header h1{ font-size:28px; margin:0 0 8px; }
+.result-sub{ color: var(--text-secondary); margin:0; }
+
+.result-grid{
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+  gap:14px; margin-bottom:30px;
+}
+.result-card{
+  background: var(--surface); border:1px solid var(--surface-border);
+  border-radius: var(--radius-md); padding:18px; text-align:center;
+  backdrop-filter: blur(10px);
+}
+.result-card.highlight{ border-color: var(--accent); background: var(--accent-soft); }
+.result-card.info-only{ border-style: dashed; opacity: 0.85; }
+.rc-note{ display:block; font-size:10.5px; color: var(--text-secondary); margin-top:4px; font-style: italic; }
+.rc-label{ display:block; font-size:12px; color: var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px; }
+.rc-value{ font-size:24px; font-weight:800; }
+
+.result-actions{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-bottom:44px; }
+
+.comparison-section, .error-table-section{ margin-bottom:44px; }
+
+/* ==========================================================================
+   CALCULATION BREAKDOWN + WEAK WORDS DRILL
+   ========================================================================== */
+.calc-section{ margin-bottom:44px; }
+.calc-section h2{ font-size:19px; margin-bottom:14px; }
+.calc-box{
+  background: var(--surface); border:1px solid var(--surface-border);
+  border-radius: var(--radius-md); padding:18px 22px; backdrop-filter: blur(10px);
+  font-family: var(--font-mono); font-size:14px; line-height:2.1;
+  color: var(--text-secondary);
+}
+.calc-box .calc-line{ display:block; }
+.calc-box .calc-line b{ color: var(--text-primary); font-weight:600; }
+
+.weak-words-section{ margin-bottom:44px; }
+.weak-words-section .section-head{ margin-bottom:6px; }
+.weak-words-chips{
+  display:flex; flex-wrap:wrap; gap:10px; margin-top:16px;
+}
+.weak-word-chip{
+  background: var(--danger-soft); color: var(--danger);
+  border:1px solid var(--danger); border-radius:20px;
+  padding:6px 14px; font-size:13.5px; font-weight:600;
+  font-family: var(--font-mono);
+}
+
+/* ==========================================================================
+   DIAGNOSTIC REPORT
+   ========================================================================== */
+.diagnostic-section{ margin-bottom:44px; }
+.diagnostic-grid{
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap:14px; margin-top:16px;
+}
+.diagnostic-card{
+  background: var(--surface); border:1px solid var(--surface-border);
+  border-left:3px solid var(--accent);
+  border-radius: var(--radius-md); padding:16px 18px;
+  backdrop-filter: blur(10px);
+}
+.dc-head{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.dc-icon{ font-size:16px; }
+.dc-title{ font-size:14px; font-weight:700; margin:0; }
+.dc-body{ font-size:13.5px; color: var(--text-primary); line-height:1.6; margin-bottom:8px; }
+.dc-tip{ font-size:12.5px; color: var(--text-secondary); line-height:1.5; }
+.dc-tip b{ color: var(--accent); font-weight:600; }
+.comparison-section h2, .error-table-section h2{ font-size:19px; margin-bottom:14px; }
+
+.legend{ display:flex; gap:18px; flex-wrap:wrap; margin-bottom:14px; font-size:13px; color: var(--text-secondary); }
+.legend-item{ display:flex; align-items:center; gap:6px; }
+.dot{ width:10px; height:10px; border-radius:50%; display:inline-block; }
+.dot.correct{ background: var(--success); }
+.dot.incorrect{ background: var(--danger); }
+.dot.missing{ background: var(--warning); }
+.dot.extra{ background: #B36BFF; }
+.dot.half{ background: #6BB8FF; }
+.dot.untyped{ background: var(--text-secondary); }
+
+.compare-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.compare-col{
+  background: var(--surface); border:1px solid var(--surface-border);
+  border-radius: var(--radius-md); padding:18px; backdrop-filter: blur(10px);
+}
+.compare-text{ font-family: var(--font-mono); line-height:1.9; font-size:16px; white-space:pre-wrap; }
+.compare-text .w-correct{ color: var(--success); }
+.compare-text .w-incorrect{ color: var(--danger); text-decoration: underline wavy var(--danger); }
+.compare-text .w-missing{ color: var(--warning); text-decoration: line-through; }
+.compare-text .w-extra{ color: #B36BFF; }
+.compare-text .w-half{ color: #6BB8FF; text-decoration: underline dotted #6BB8FF; }
+.compare-text .w-untyped{ color: var(--text-secondary); opacity: 0.55; }
+
+.table-wrap{
+  background: var(--surface); border:1px solid var(--surface-border);
+  border-radius: var(--radius-md); padding:6px; backdrop-filter: blur(10px); overflow-x:auto;
+}
+.error-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+.error-table th, .error-table td{ padding:10px 14px; text-align:left; border-bottom:1px solid var(--surface-border); white-space:nowrap; }
+.error-table th{ color: var(--text-secondary); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:0.4px; }
+.empty-note{ text-align:center; padding:20px; color: var(--text-secondary); }
+
+/* ==========================================================================
+   MODAL (Settings + Countdown)
+   ========================================================================== */
+.modal-overlay{
+  position:fixed; inset:0; background: rgba(0,0,0,0.55);
+  display:flex; align-items:center; justify-content:center; z-index:100;
+  backdrop-filter: blur(4px);
+}
+.modal{
+  width:min(560px, 92vw); max-height:88vh; overflow-y:auto;
+  background: var(--surface-solid); border:1px solid var(--surface-border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-soft);
+}
+.modal.modal-wide{ width:min(760px, 94vw); }
+.modal-head{ display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid var(--surface-border); }
+.modal-head h2{ margin:0; font-size:18px; }
+.modal-body{ padding:22px 24px; display:flex; flex-direction:column; gap:22px; }
+.modal-foot{ padding:18px 24px; border-top:1px solid var(--surface-border); display:flex; justify-content:flex-end; gap:10px; }
+
+.setting-group label{ display:block; font-size:13px; font-weight:600; margin-bottom:10px; color: var(--text-secondary); }
+.setting-note{ font-size:12px; color: var(--text-secondary); line-height:1.5; margin:10px 0 0; }
+.setting-group.two-col{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.setting-group input[type="number"], .setting-group input[type="text"], .setting-group select{
+  width:100%; padding:10px 12px; border-radius: var(--radius-sm);
+  border:1px solid var(--surface-border); background: var(--surface); color: var(--text-primary);
+}
+.custom-timer-row{ display:flex; align-items:center; gap:10px; margin-top:10px; }
+.inline-label{ font-size:12.5px; color: var(--text-secondary); margin:0; white-space:nowrap; }
+.custom-timer-row input{ flex:1; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--surface-border); background: var(--surface); color: var(--text-primary); }
+
+/* Notepad-style textarea used by the Custom Passage modal — plain, wide,
+   generous line-height, so pasted material reads like an actual notepad. */
+.notepad-textarea{
+  width:100%; min-height:280px; resize:vertical;
+  padding:16px 18px; border-radius: var(--radius-md);
+  border:1px solid var(--surface-border); background: var(--surface);
+  color: var(--text-primary); font-family: var(--font-notepad);
+  font-size:16px; line-height:1.8;
+}
+.notepad-textarea:focus{ outline:none; border-color: var(--accent); }
+
+.ambience-file-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px; }
+.ambience-file-row input[type="file"]{
+  flex:1; min-width:180px; font-size:12.5px; color: var(--text-secondary);
+}
+.ambience-volume-row{ display:flex; align-items:center; gap:12px; margin-top:14px; }
+.ambience-volume-row input[type="range"]{ flex:1; }
+
+.seg-control{ display:flex; border:1px solid var(--surface-border); border-radius: var(--radius-sm); overflow:hidden; flex-wrap:wrap; }
+.seg-btn{
+  flex:1; padding:9px 12px; background:transparent; border:none; color: var(--text-secondary);
+  font-size:13px; font-weight:600; border-right:1px solid var(--surface-border);
+}
+.seg-btn:last-child{ border-right:none; }
+.seg-btn.active{ background: var(--accent); color:#08131F; }
+
+/* Paper-to-Screen countdown must keep the passage readable behind it —
+   no darken/blur, and clicks pass through except on the badge itself. */
+.modal-overlay.countdown-mode{
+  background: transparent;
+  backdrop-filter: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 30px;
+  pointer-events: none;
+}
+.modal-overlay.countdown-mode .countdown-box{
+  pointer-events: auto;
+  background: var(--surface-solid);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 18px 32px;
+}
+.countdown-box{ text-align:center; color: var(--text-primary); }
+.countdown-label{ font-size:15px; margin-bottom:14px; color: var(--text-secondary); }
+.countdown-number{ font-size:96px; font-weight:800; color: var(--accent); }
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+@media (max-width: 980px){
+  .compare-grid{ grid-template-columns:1fr; }
+  .stats-strip{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px){
+  .toolbar-stats{ gap:12px; }
+  .tstat{ min-width:44px; }
+  .hero-actions{ flex-direction:column; align-items:stretch; }
+  .setting-group.two-col{ grid-template-columns:1fr; }
+}
+
+/* ==========================================================================
+   PRINT (used by Export PDF button via window.print())
+   ========================================================================== */
+@media print{
+  .topnav, .test-footer, .result-actions, .modal-overlay{ display:none !important; }
+  body{ background:#fff; color:#000; }
+  .result-card, .compare-col, .table-wrap{ border:1px solid #ccc; }
+}
+
+/* ==========================================================================
+   PRINT-ALL (combined A4 PDF of every passage, for Paper‑to‑Screen practice)
+   ========================================================================== */
+.print-all-container{ display:none; }
+
+body.printing-all > *:not(.print-all-container){ display:none !important; }
+body.printing-all .print-all-container{
+  display:block; background:#fff; color:#000;
+}
+
+.print-all-container .print-page{
+  padding: 14mm 16mm;
+  page-break-after: always;
+  font-family: Georgia, "Times New Roman", serif;
+}
+.print-all-container .print-page:last-child{ page-break-after: auto; }
+.print-all-container .print-head{
+  display:flex; justify-content:space-between; align-items:baseline;
+  border-bottom: 2px solid #000; padding-bottom:8px; margin-bottom:16px;
+}
+.print-all-container .print-head h2{ font-size:16px; margin:0; }
+.print-all-container .print-head span{ font-size:12px; color:#444; }
+.print-all-container .print-body{
+  font-size:13.5px; line-height:1.85; text-align:justify; white-space:pre-wrap;
+}
+.print-all-container .print-footer{
+  margin-top:18px; font-size:10.5px; color:#666; text-align:right;
+}
+
+@media print{
+  @page{ size: A4; margin: 12mm; }
+  .print-all-container .print-page{ padding:0; }
+}
