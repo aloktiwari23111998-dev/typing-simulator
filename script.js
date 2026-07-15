@@ -232,11 +232,15 @@ function keyClickSound(){
    --------------------------------------------------------------------- */
 function startAmbience(){
   if(state.settings.sound !== "on" || state.settings.ambience !== "on") return;
-  const dataUrl = loadAmbienceAudio();
-  if(!dataUrl) return;
+  // Prefer whatever's persisted in localStorage; if the file was too big
+  // to save (or saving failed), fall back to the in-memory session URL
+  // from this page load so it still plays even though it won't survive
+  // a reload.
+  const src = loadAmbienceAudio() || state.ambienceStagedDataUrl;
+  if(!src) return;
   try{
     stopAmbience();
-    const audio = new Audio(dataUrl);
+    const audio = new Audio(src);
     audio.loop = true;
     audio.volume = Math.max(0, Math.min(state.settings.ambienceVolume / 100, 1));
     audio.play().catch(() => { /* blocked by autoplay policy — ignore */ });
@@ -1336,12 +1340,18 @@ function wireSettingsModal(){
    remove, and live volume for the person's own recording.
    --------------------------------------------------------------------- */
 function refreshAmbienceFileStatus(){
-  const hasFile = !!loadAmbienceAudio();
-  $("#ambienceFileStatus").textContent = hasFile
-    ? "Custom recording saved — plays in a loop, quietly, during a test."
-    : "No file selected — plays in a loop, quietly, during a test.";
-  $("#btnPreviewAmbience").disabled = !hasFile;
-  $("#btnRemoveAmbience").disabled = !hasFile;
+  const persisted = !!loadAmbienceAudio();
+  const sessionOnly = !persisted && !!state.ambienceStagedDataUrl;
+
+  if(persisted){
+    $("#ambienceFileStatus").textContent = "Custom recording saved — plays in a loop, quietly, during a test.";
+  }else if(sessionOnly){
+    $("#ambienceFileStatus").textContent = "Recording loaded for this session only (too large to save for next time) — plays in a loop during a test.";
+  }else{
+    $("#ambienceFileStatus").textContent = "No file selected — plays in a loop, quietly, during a test.";
+  }
+  $("#btnPreviewAmbience").disabled = !persisted && !sessionOnly;
+  $("#btnRemoveAmbience").disabled = !persisted && !sessionOnly;
 }
 
 function wireAmbienceControls(){
@@ -1349,30 +1359,52 @@ function wireAmbienceControls(){
     const file = e.target.files && e.target.files[0];
     if(!file) return;
 
-    const MAX_BYTES = 4 * 1024 * 1024; // ~4MB — keeps it well within typical localStorage quota
-    if(file.size > MAX_BYTES){
-      alert("That file is a bit large for offline storage (over 4MB). Try a shorter clip or a lower-quality export, or it may not be remembered next time you open the app.");
+    // Always make the file playable THIS session immediately via an
+    // object URL — this works instantly for any file size and doesn't
+    // depend on localStorage at all. This is the fallback that was
+    // previously promised but never actually wired up.
+    if(state.ambienceStagedDataUrl){
+      try{ URL.revokeObjectURL(state.ambienceStagedDataUrl); }catch(err){ /* ignore */ }
+    }
+    state.ambienceStagedDataUrl = URL.createObjectURL(file);
+
+    const MAX_PERSIST_BYTES = 4 * 1024 * 1024; // ~4MB — keeps base64 well within typical localStorage quota
+    if(file.size > MAX_PERSIST_BYTES){
+      // Too big to persist — skip the expensive base64 conversion
+      // entirely and just use the session-only object URL.
+      alert(`That file is ${(file.size / (1024*1024)).toFixed(1)}MB — too large to remember for next time (limit ~4MB), but it'll play fine for this session. For it to persist across reloads, use a shorter clip or a lower-bitrate export.`);
+      refreshAmbienceFileStatus();
+      return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
-      const dataUrl = reader.result;
-      const saved = saveAmbienceAudio(dataUrl);
+      const saved = saveAmbienceAudio(reader.result);
       if(!saved){
-        alert("Couldn't save this recording for reuse (storage full) — it will still work for this session only.");
+        alert("Couldn't save this recording for reuse (storage full) — it'll still work for this session.");
       }
       refreshAmbienceFileStatus();
     };
-    reader.onerror = () => alert("Couldn't read that audio file — try a different one.");
+    reader.onerror = () => {
+      // Object URL is already staged, so playback still works even if
+      // this fails — just can't persist it.
+      alert("Couldn't prepare that file for saving — it'll still work for this session.");
+    };
     reader.readAsDataURL(file);
+
+    refreshAmbienceFileStatus();
   });
 
   $("#btnPreviewAmbience").addEventListener("click", () => {
-    previewAmbience(loadAmbienceAudio());
+    previewAmbience(loadAmbienceAudio() || state.ambienceStagedDataUrl);
   });
 
   $("#btnRemoveAmbience").addEventListener("click", () => {
     clearAmbienceAudio();
+    if(state.ambienceStagedDataUrl){
+      try{ URL.revokeObjectURL(state.ambienceStagedDataUrl); }catch(err){ /* ignore */ }
+      state.ambienceStagedDataUrl = null;
+    }
     $("#ambienceFileInput").value = "";
     refreshAmbienceFileStatus();
   });
