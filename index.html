@@ -96,6 +96,38 @@
      ============================================================ -->
 <main class="screen test-screen" id="testScreen" hidden>
 
+  <!-- NTA/TCS government exam-style chrome. Present in the DOM but
+       display:none by default (see style.css) — has zero effect on
+       layout, functionality, or the elements below until Settings →
+       Exam Interface → "NTA / TCS Interface" is switched ON, at which
+       point body gets class "nta-mode" and these become visible while
+       the modern toolbar/progress-track are visually swapped out. -->
+  <div class="nta-gov-header" id="ntaGovHeader">
+    <span class="nta-gov-title" id="ntaGovTitle">Typing Test</span>
+    <div class="nta-gov-actions">
+      <button class="nta-gov-link" id="ntaBtnSettings">⚙ Settings</button>
+      <button class="nta-gov-link" id="ntaBtnInstructions">ⓘ Instructions</button>
+    </div>
+  </div>
+
+  <div class="nta-toplevel-tab" id="ntaToplevelTab">Actual Typing</div>
+
+  <div class="nta-tabs-row" id="ntaTabsRow">
+    <div class="nta-sections">
+      <div class="nta-sections-label">Sections</div>
+      <div class="nta-section-pill">Actual Typing</div>
+    </div>
+    <div class="nta-tabs-right">
+      <span class="nta-time-left">Time Left : <b id="ntaTimeLeft">00:00</b></span>
+      <div class="nta-candidate-box">
+        <span class="nta-candidate-avatar">👤</span>
+        <span class="nta-candidate-name">Candidate</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="nta-keyboard-strip" id="ntaKeyboardStrip">Keyboard Layout : English</div>
+
   <div class="toolbar">
     <div class="toolbar-left">
       <button class="icon-btn" id="btnExit" title="Exit test">✕</button>
@@ -123,6 +155,7 @@
     <div class="passage-pane" id="passagePane">
       <div class="pane-label">Original Passage</div>
       <div class="passage-text" id="passageText"></div>
+      <div class="nta-watermark" id="ntaWatermark" aria-hidden="true"></div>
     </div>
 
     <div class="typing-pane">
@@ -134,6 +167,8 @@
   <div class="test-footer">
     <button class="btn btn-secondary" id="btnSubmitEarly">Submit Test</button>
   </div>
+
+  <div class="nta-version-footer" id="ntaVersionFooter">Version : 17.07.00</div>
 
 </main>
 
@@ -300,6 +335,20 @@
           <button data-value="light" class="seg-btn">Light</button>
           <button data-value="blue" class="seg-btn">Blue</button>
         </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Exam Interface</label>
+        <div class="seg-control" id="ntaInterfaceControl">
+          <button data-value="off" class="seg-btn active">NTA / TCS Interface: Off</button>
+          <button data-value="on" class="seg-btn">NTA / TCS Interface: On</button>
+        </div>
+        <p class="setting-note">On: only the visual look changes to resemble the official DSSSB/NTA/TCS government CBT typing portal. Typing, timer, WPM/CPM, accuracy, and scoring are exactly the same either way.</p>
+        <div class="seg-control" id="autoScrollControl" style="margin-top:12px;">
+          <button data-value="on" class="seg-btn active">Auto Scroll Passage: On</button>
+          <button data-value="off" class="seg-btn">Auto Scroll Passage: Off</button>
+        </div>
+        <p class="setting-note">On: the passage auto-scrolls to keep your current position visible while you type, like the real NTA/TCS exam. Off: the passage stays fixed.</p>
       </div>
 
       <div class="setting-group">

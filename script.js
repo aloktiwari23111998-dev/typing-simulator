@@ -35,7 +35,9 @@ const DEFAULT_SETTINGS = {
   trailingLeniency: "on",  // "on" | "off" — don't penalize the trailing stretch never reached before time ran out (mid-passage skips still always count)
   sound: "on",
   ambience: "off",         // "on" | "off" — play the user's own exam-hall recording during a test
-  ambienceVolume: 30       // 0-100
+  ambienceVolume: 30,      // 0-100
+  examInterface: "off",    // "off" | "on" — visual-only NTA/TCS government CBT skin (Exam Interface setting)
+  autoScrollPassage: "on"  // "on" | "off" — auto-scroll the passage pane to keep the current word visible while typing
 };
 
 function loadSettings(){
@@ -421,9 +423,11 @@ function startTest(passage){
   $("#testScreen").hidden = false;
 
   $("#testTitle").textContent = passage.title;
+  $("#ntaGovTitle").textContent = passage.title;
   $("#typingArea").value = "";
   $("#typingArea").disabled = false;
   $("#liveTimer").textContent = formatTime(state.remainingSeconds);
+  $("#ntaTimeLeft").textContent = formatTime(state.remainingSeconds);
   $("#liveGross").textContent = "0";
   $("#liveNet").textContent = "0";
   $("#liveAcc").textContent = "100%";
@@ -500,6 +504,20 @@ function renderPassageWords(originalText, typedText){
   }).join(" ");
 
   $("#passageText").innerHTML = html;
+
+  if(state.settings.autoScrollPassage === "on"){
+    scrollPassageToCurrentWord();
+  }
+}
+
+// Keeps the current word visible inside the (scrollable) passage pane as
+// the candidate types, like the real NTA/TCS exam. scrollIntoView with
+// block:"nearest" is a no-op when the word is already visible, so this
+// never fights the user's own scrolling or causes jumping/flicker.
+function scrollPassageToCurrentWord(){
+  const current = $("#passageText .word.current");
+  if(!current) return;
+  current.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
 }
 
 function escapeHtml(str){
@@ -514,6 +532,7 @@ function startMainTimer(){
     state.remainingSeconds -= 1;
     state.elapsedSeconds += 1;
     $("#liveTimer").textContent = formatTime(Math.max(state.remainingSeconds, 0));
+    $("#ntaTimeLeft").textContent = formatTime(Math.max(state.remainingSeconds, 0));
     updateLiveStats();
     if(state.remainingSeconds <= 0){
       finishTest("timeout");
@@ -1286,6 +1305,8 @@ function populateSettingsForm(){
   wireSegControl("#trailingLeniencyControl", "trailingLeniency", v => s.trailingLeniency = v);
   wireSegControl("#soundControl", "sound", v => s.sound = v);
   wireSegControl("#ambienceControl", "ambience", v => s.ambience = v);
+  wireSegControl("#ntaInterfaceControl", "examInterface", v => { s.examInterface = v; applyExamInterfaceMode(); });
+  wireSegControl("#autoScrollControl", "autoScrollPassage", v => s.autoScrollPassage = v);
 
   $("#customTimer").value = "";
   $("#customTimer").addEventListener("change", () => {
@@ -1307,6 +1328,18 @@ function populateSettingsForm(){
 
 function applyTheme(){
   document.documentElement.setAttribute("data-theme", state.settings.theme);
+}
+
+// Purely visual: toggles the "nta-mode" class that style.css uses to skin
+// the test screen like the official DSSSB/NTA/TCS CBT portal. Does not
+// touch typing, timer, WPM/CPM/accuracy, mistake detection, or results —
+// those all keep reading/writing the exact same elements either way.
+function applyExamInterfaceMode(){
+  const on = state.settings.examInterface === "on";
+  document.body.classList.toggle("nta-mode", on);
+  if(on && state.currentPassage){
+    $("#ntaGovTitle").textContent = state.currentPassage.title;
+  }
 }
 
 function wireSettingsModal(){
@@ -1452,6 +1485,13 @@ function wireTestScreenButtons(){
     saveSettings(state.settings);
     $("#btnSound").textContent = state.settings.sound === "on" ? "🔊" : "🔇";
     beep(520, 80);
+  });
+
+  // NTA-skin header controls — reuse the exact same Settings modal, and a
+  // simple informational note for Instructions (no new test logic).
+  $("#ntaBtnSettings").addEventListener("click", openSettings);
+  $("#ntaBtnInstructions").addEventListener("click", () => {
+    alert("Type the passage exactly as shown. The timer starts on your first keystroke. Submit before time runs out, or the test auto-submits.");
   });
 }
 
@@ -1599,6 +1639,7 @@ function downloadAllPassagesPdf(){
    -------------------------------------------------------------------------- */
 function boot(){
   applyTheme();
+  applyExamInterfaceMode();
   populateSettingsForm();
   wireSettingsModal();
   wireHomeScreen();
