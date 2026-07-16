@@ -302,7 +302,7 @@ input, select, textarea{ font-family: inherit; }
 
 .passage-text{
   line-height:1.9; font-size:18px; font-family: var(--font-mono);
-  white-space: pre-wrap;
+  white-space: pre-wrap; position:relative;
 }
 .passage-text .word{ padding:1px 1px; border-radius:3px; }
 .passage-text .word.current{ background: var(--accent-soft); outline:1px solid var(--accent); }
@@ -719,22 +719,18 @@ body.nta-mode .nta-version-footer{
   font-size:11.5px; padding:6px 0;
 }
 
-/* Responsive width, tied to effective viewport width (which is exactly
-   how browser zoom presents itself to CSS): a wider effective viewport —
-   e.g. ~90% zoom on a given monitor — keeps the compact ~60%-width
-   DSSSB-style layout with generous white space on the right. A narrower
-   effective viewport — e.g. ~100% zoom on the same monitor — expands the
-   passage/typing area to nearly full width automatically, no manual
-   switching. */
+/* Fluid container width matching the reference DSSSB screenshots — a
+   fixed comfortable reading-width column (clamp between a sensible
+   floor and ceiling) rather than a viewport-width breakpoint. This is
+   NOT trying to detect browser zoom: it's a plain responsive max-width,
+   so it naturally sits full-width on narrower/laptop windows and shows
+   the same right-side whitespace the reference shows on wide monitors —
+   with no discrete on/off switch anywhere. */
 body.nta-mode .passage-pane,
 body.nta-mode .typing-pane{
-  width:100%; max-width:100%;
-}
-@media (min-width:1600px){
-  body.nta-mode .passage-pane,
-  body.nta-mode .typing-pane{
-    width:60%; max-width:60%;
-  }
+  width:100%;
+  max-width: clamp(760px, 82vw, 1180px);
+  margin:0;
 }
 @media (max-width:700px){
   body.nta-mode .nta-tabs-row{ align-items:flex-start; }

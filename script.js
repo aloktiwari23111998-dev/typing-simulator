@@ -435,6 +435,7 @@ function startTest(passage){
   $("#progressFill").style.width = "0%";
 
   applyTypographySettings();
+  resetPassageAutoScroll();
   renderPassageWords(passage.text, "");
 
   const isPaper = state.settings.mode === "paper";
@@ -505,19 +506,59 @@ function renderPassageWords(originalText, typedText){
 
   $("#passageText").innerHTML = html;
 
-  if(state.settings.autoScrollPassage === "on"){
-    scrollPassageToCurrentWord();
-  }
+  updatePassageAutoScroll();
 }
 
-// Keeps the current word visible inside the (scrollable) passage pane as
-// the candidate types, like the real NTA/TCS exam. scrollIntoView with
-// block:"nearest" is a no-op when the word is already visible, so this
-// never fights the user's own scrolling or causes jumping/flicker.
-function scrollPassageToCurrentWord(){
-  const current = $("#passageText .word.current");
-  if(!current) return;
-  current.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+/* ---------------------------------------------------------------------
+   Auto Scroll Passage — line-by-line, exactly like the official
+   NTA/TCS/DSSSB typing exam:
+     - The passage stays completely still while the candidate types
+       within the lines currently on screen.
+     - The instant the current word's line becomes the LAST visible
+       line, the passage jumps up by EXACTLY ONE rendered line height —
+       a single hard cut, no smooth animation, no partial scrolling.
+     - It only re-checks when the candidate has actually moved onto a
+       new line (never mid-line, never once per keystroke/word).
+     - If the setting is OFF, this function is never called with any
+       scrolling effect — the passage never auto-scrolls.
+   --------------------------------------------------------------------- */
+const passageScrollState = { scrolledLines: 0, lastLine: -1 };
+
+function resetPassageAutoScroll(){
+  passageScrollState.scrolledLines = 0;
+  passageScrollState.lastLine = -1;
+  const pane = $("#passagePane");
+  if(pane) pane.scrollTop = 0;
+}
+
+function updatePassageAutoScroll(){
+  if(state.settings.autoScrollPassage !== "on") return;
+
+  const pane = $("#passagePane");
+  const textEl = $("#passageText");
+  const current = textEl.querySelector(".word.current");
+  if(!pane || !current) return;
+
+  const lineHeight = parseFloat(getComputedStyle(textEl).lineHeight);
+  if(!lineHeight || Number.isNaN(lineHeight)) return;
+
+  // Which rendered line (0-based) the current word sits on. #passageText
+  // has position:relative (style.css) so offsetTop is measured from the
+  // very top of the full passage, unaffected by the pane's own scroll.
+  const currentLine = Math.round(current.offsetTop / lineHeight);
+
+  // Only re-evaluate when the candidate has actually crossed onto a
+  // different line — never on every keystroke/word within the same line.
+  if(currentLine === passageScrollState.lastLine) return;
+  passageScrollState.lastLine = currentLine;
+
+  const visibleLines = Math.max(Math.floor(pane.clientHeight / lineHeight), 1);
+  const lastVisibleLine = passageScrollState.scrolledLines + visibleLines - 1;
+
+  if(currentLine >= lastVisibleLine){
+    passageScrollState.scrolledLines += 1;
+    pane.scrollTop = passageScrollState.scrolledLines * lineHeight; // instant, exact one-line jump — no animation
+  }
 }
 
 function escapeHtml(str){
