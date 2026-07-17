@@ -287,7 +287,7 @@ input, select, textarea{ font-family: inherit; }
 .passage-pane{
   background: var(--surface); border:1px solid var(--surface-border);
   border-radius: var(--radius-md); padding:18px; backdrop-filter: blur(10px);
-  max-height: 260px; overflow-y:auto;
+  max-height: 260px; overflow-y:auto; scroll-behavior:smooth;
 }
 .typing-pane{
   background: var(--surface); border:1px solid var(--surface-border);
@@ -574,165 +574,199 @@ body.printing-all .print-all-container{
    so with the setting OFF this block changes nothing on screen and adds
    nothing to layout. None of the typing/timer/WPM/CPM/accuracy/mistake-
    detection/result elements are touched, only repositioned or restyled.
+
+   Values below are taken directly from the reference site's own CSS
+   (captured via MHTML: eztyping.com/test/dsssb-new-typing-test-23),
+   not estimated from screenshots.
    ========================================================================== */
-.nta-gov-header, .nta-toplevel-tab, .nta-tabs-row, .nta-keyboard-strip,
-.nta-version-footer, .nta-watermark{
+.nta-gov-header, .nta-toplevel-tab-row, .nta-tabs-row, .nta-keyboard-strip,
+.nta-watermark{
   display:none;
+}
+/* These two wrap functional elements (passage/typing panes, submit
+   button) that must keep working identically when NTA mode is off, so
+   they default to display:contents — completely inert, contributing
+   nothing to layout, exactly as if the wrapper div weren't there. */
+.nta-typing-container, .nta-footer-container{
+  display:contents;
 }
 
 body.nta-mode{
-  background:#eef1f4;
+  background-color:#fff;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='350' height='160'><text x='10' y='120' fill='rgba(0,0,0,0.12)' font-size='26' font-family='Arial' font-weight='bold' transform='rotate(-40 10 120)'>6912808299400</text></svg>");
+  background-repeat:repeat;
+  height:100%; overflow:hidden;
 }
 body.nta-mode .topnav{ display:none !important; }
+body.nta-mode .nta-watermark{ display:none; } /* watermark lives on body itself, matching the reference */
 
 body.nta-mode .test-screen{
   display:flex; flex-direction:column;
   height:100vh; max-width:none; width:100%;
   padding:0; margin:0;
-  font-family: Arial, Helvetica, sans-serif;
-  color:#1a1a1a;
+  font-family: arial, verdana, helvetica, sans-serif;
+  color:#000;
   position:relative;
   overflow:hidden;
 }
 
-/* Dark government header bar */
+/* A. Top header bar — .top-header */
 .nta-gov-header{
-  background:#2c2c2c; color:#fff;
+  background:#363636; color:#fff;
   align-items:center; justify-content:space-between;
-  padding:14px 24px; font-size:19px; font-weight:700;
-  flex:0 0 auto;
+  padding:0 20px; height:30px; flex-shrink:0;
 }
 body.nta-mode .nta-gov-header{ display:flex; }
-.nta-gov-actions{ display:flex; align-items:center; gap:22px; }
+.nta-gov-title{ font-size:16px; font-weight:bold; color:#fff; }
+.nta-gov-actions{ display:flex; align-items:center; gap:15px; }
 .nta-gov-link{
-  background:none; border:none; color:#fff; font-size:13.5px; font-weight:500;
-  display:inline-flex; align-items:center; gap:6px; padding:0;
+  background:none; border:none; color:#fff; font-size:12px;
+  display:flex; align-items:center; gap:5px; cursor:pointer; padding:0;
 }
-.nta-gov-link:hover{ text-decoration:underline; }
-
-/* Top-level "Actual Typing" tab */
-body.nta-mode .nta-toplevel-tab{
-  display:inline-block; flex:0 0 auto;
-  background:#3f7fd1; color:#fff;
-  padding:10px 22px; margin:14px 0 0 24px;
-  font-size:13.5px; font-weight:600; border-radius:2px 2px 0 0; align-self:flex-start;
+.nta-gov-link:hover{ color:#ccc; }
+.nta-gov-link .icon-circle{
+  background:#2b78e4; color:#fff; border-radius:50%; width:16px; height:16px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:bold;
 }
 
-/* Sections row + Time Left + candidate box */
+/* B. Tab navigation row — .tab-nav-row / .main-tab.active */
+.nta-toplevel-tab-row{
+  background:#fff; height:40px; align-items:center;
+  padding:0 20px; flex-shrink:0; border-bottom:1px solid #b3b3b3;
+}
+body.nta-mode .nta-toplevel-tab-row{ display:flex; }
+.nta-toplevel-tab{
+  background:#147eb3; color:#fff; border:1px solid #147eb3;
+  padding:5px 12px; height:29px; display:flex; align-items:center;
+  font-size:13px; border-radius:3px; position:relative;
+}
+.nta-toplevel-tab::before{
+  content:""; position:absolute; width:0; height:0; top:28px; left:44%;
+  border:6px solid transparent; border-top-color:#147eb3;
+}
+
+/* C. Section & user info bar — .section-info-bar */
 body.nta-mode .nta-tabs-row{
-  display:flex; flex:0 0 auto;
-  justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;
-  padding:10px 24px; background:#fff; border-bottom:1px solid #d8dde3;
+  display:flex; justify-content:space-between; align-items:center;
+  background:#fff; height:50px; padding:0 20px; flex-shrink:0;
+  border-bottom:1px solid #b3b3b3;
 }
-.nta-sections-label{ font-size:12.5px; color:#7a828c; margin-bottom:6px; }
+.nta-sections{ display:flex; flex-direction:column; justify-content:center; }
+.nta-sections-label{ font-size:12px; color:#585c65; margin-bottom:2px; }
 .nta-section-pill{
-  display:inline-block; background:#3f7fd1; color:#fff;
-  padding:6px 16px; font-size:13px; font-weight:500; border-radius:2px;
+  background:#147eb3; color:#fff; font-size:11px; padding:2px 10px;
+  border-radius:2px; display:inline-block; align-self:flex-start;
 }
-.nta-tabs-right{ display:flex; align-items:center; gap:22px; }
-.nta-time-left{ font-size:15px; color:#333; }
-.nta-time-left b{ color:#1a4fbf; }
+.nta-tabs-right{ display:flex; align-items:center; gap:20px; position:relative; }
+.nta-time-left{ font-size:14px; color:#333; font-weight:normal; margin-right:15px; }
+.nta-time-left b{ color:#036; font-weight:bold; }
 .nta-candidate-box{
-  display:flex; align-items:center; gap:10px;
-  background:#fff; border:1px solid #d0d5db; border-radius:4px; padding:5px 14px;
+  display:flex; align-items:center; background:#fff; border:1px solid #b3b3b3;
+  height:65px; padding:2px 10px 2px 2px; border-radius:0; gap:8px;
+  position:relative; z-index:10; margin-top:-25px;
 }
 .nta-candidate-avatar{
-  width:32px; height:32px; border-radius:50%; background:#dfe6ee;
-  display:flex; align-items:center; justify-content:center; font-size:16px;
+  width:60px; height:60px; background:transparent; display:flex;
+  align-items:center; justify-content:center; border-radius:0;
+  overflow:hidden; font-size:38px;
 }
-.nta-candidate-name{ font-weight:700; color:#1a4fbf; font-size:14px; }
+.nta-candidate-name{ font-size:14px; color:#036; font-weight:normal; }
 
-/* Blue keyboard-layout strip */
+/* D. Keyboard layout bar — .keyboard-layout-bar */
 body.nta-mode .nta-keyboard-strip{
-  display:block; flex:0 0 auto;
-  background:#4f7fc4; color:#fff; font-weight:700; font-size:13.5px;
-  padding:9px 24px;
+  display:flex; align-items:center;
+  background:#4a7abb; height:30px; padding:0 20px;
+  color:#fff; font-size:13px; font-weight:bold; flex-shrink:0;
 }
 
 /* Tuck the modern toolbar's functional controls (exit / sound / fullscreen
-   / restart) into a small discreet corner cluster instead of removing
-   them — keeps every existing control fully clickable, just visually out
-   of the way of the government-portal look. Live WPM/Net/Accuracy/
+   / restart) into a small discreet corner cluster — the reference has no
+   equivalent controls, so these are kept, just visually out of the way,
+   to preserve 100% of the existing functionality. Live WPM/Net/Accuracy/
    Mistakes readouts are hidden here because the real exam interface
-   doesn't surface them mid-test — they're still computed exactly as
-   before and shown in full on the Result screen. */
+   doesn't surface them mid-test — still computed exactly as before and
+   shown in full on the Result screen. */
 body.nta-mode .toolbar{
-  position:fixed; top:8px; right:10px; z-index:50;
+  position:fixed; top:4px; right:6px; z-index:50;
   background:transparent; border:none; padding:0; margin:0;
-  backdrop-filter:none; box-shadow:none; gap:6px; width:auto;
+  backdrop-filter:none; box-shadow:none; gap:4px; width:auto;
 }
 body.nta-mode .toolbar-left .toolbar-title,
 body.nta-mode .toolbar-stats{ display:none; }
 body.nta-mode .toolbar-left{ gap:0; }
 body.nta-mode .icon-btn{
-  width:26px; height:26px; font-size:11px; border-radius:4px;
-  background:rgba(0,0,0,0.06); border-color:rgba(0,0,0,0.15); color:#333;
+  width:22px; height:22px; font-size:10px; border-radius:3px;
+  background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.3); color:#fff;
 }
 body.nta-mode .progress-track{ display:none; }
 
-/* Passage / typing area */
+/* E. Main workspace — .main-workspace / .typing-container */
 body.nta-mode .test-body{
-  flex:1; min-height:0; display:flex; flex-direction:column;
-  align-items:flex-start; gap:12px;
-  padding:16px 24px 86px; box-sizing:border-box; overflow:hidden;
+  flex:1 1 0%; display:flex; padding:10px 20px; overflow:hidden; position:relative;
 }
 body.nta-mode .pane-label{ display:none; }
-body.nta-mode .passage-pane{
-  background:#fff; border:1px solid #ccc; border-radius:0; backdrop-filter:none;
-  box-shadow:none; max-height:none; overflow-y:auto; position:relative;
-  padding:16px 20px; flex:0 1 48%; width:100%; box-sizing:border-box;
-}
-body.nta-mode .typing-pane{
-  background:#fff; border:2px solid #ff9800; border-radius:0; backdrop-filter:none;
-  box-shadow:none; min-height:0; flex:1; padding:16px 20px;
-  width:100%; box-sizing:border-box;
-}
-body.nta-mode .passage-text,
-body.nta-mode .typing-area{
-  font-family: Arial, Helvetica, sans-serif;
-  font-size:22px; line-height:1.45;
-}
-body.nta-mode .passage-text{ color:#1a1a1a; }
-body.nta-mode .passage-text .word.pending{ color:#2a2a2a; }
-body.nta-mode .passage-text .word.correct{ color:#1a7a3c; }
-body.nta-mode .passage-text .word.incorrect{ color:#c62828; text-decoration:underline wavy #c62828; }
-body.nta-mode .passage-text .word.current{ background:#fff3cd; outline:2px solid #ff9800; }
-body.nta-mode .typing-area{ color:#111; }
-
-/* Faint repeating diagonal watermark, like a real CBT proctoring sheet */
-body.nta-mode .nta-watermark{
-  display:block; position:absolute; inset:0; pointer-events:none;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='230' height='150'><text x='-10' y='95' font-size='19' fill='rgba(0,0,0,0.09)' transform='rotate(-25 100 75)' font-family='Arial'>158160594063</text></svg>");
-  background-repeat:repeat;
+body.nta-mode .nta-typing-container{
+  width:60%; display:flex; flex-direction:column; gap:10px; height:100%;
 }
 
-/* Submit button fixed bottom-right; version strip fixed bottom */
-body.nta-mode .test-footer{
-  position:fixed; right:24px; bottom:42px; margin:0; z-index:40;
-}
-body.nta-mode .test-footer .btn{
-  background:#3f7fd1; color:#fff; border-radius:3px; padding:12px 30px; font-size:14.5px;
-}
-body.nta-mode .nta-version-footer{
-  display:block; position:fixed; left:0; right:0; bottom:0; z-index:30;
-  background:#5b6b7c; color:#e8edf3; text-align:center;
-  font-size:11.5px; padding:6px 0;
-}
-
-/* Fluid container width matching the reference DSSSB screenshots — a
-   fixed comfortable reading-width column (clamp between a sensible
-   floor and ceiling) rather than a viewport-width breakpoint. This is
-   NOT trying to detect browser zoom: it's a plain responsive max-width,
-   so it naturally sits full-width on narrower/laptop windows and shows
-   the same right-side whitespace the reference shows on wide monitors —
-   with no discrete on/off switch anywhere. */
+/* .passage-box-wrapper / .input-box-wrapper */
 body.nta-mode .passage-pane,
 body.nta-mode .typing-pane{
-  width:100%;
-  max-width: clamp(760px, 82vw, 1180px);
-  margin:0;
+  width:100%; height:160px; min-height:0; flex-shrink:0;
+  border:1px solid #b3b3b3; background:#fff;
+  display:flex; flex-direction:column; border-radius:0;
+  backdrop-filter:none; box-shadow:none; max-height:none; padding:0;
 }
+/* .input-box-wrapper.focused */
+body.nta-mode .typing-pane.nta-focused{ border:4px solid #f90; }
+
+body.nta-mode .passage-text{
+  flex:1 1 0%; padding:5px 8px; font-size:20px; line-height:1.5;
+  color:#000; overflow-y:auto; white-space:pre-wrap; user-select:none;
+  font-family: arial, verdana, helvetica, sans-serif;
+}
+body.nta-mode .typing-area{
+  flex:1 1 0%; border:none; outline:none; padding:5px 8px;
+  font-size:18px; line-height:1.5; color:#000; overflow-y:auto;
+  background:transparent; font-family: arial, verdana, helvetica, sans-serif;
+}
+body.nta-mode .passage-text .word.pending{ color:#000; }
+body.nta-mode .passage-text .word.correct{ color:#1a7a3c; }
+body.nta-mode .passage-text .word.incorrect{ color:#c62828; text-decoration:underline wavy #c62828; }
+body.nta-mode .passage-text .word.current{ background:#fff3cd; outline:1px solid #f90; }
+
+/* Reference scrollbar styling (WebKit) */
+body.nta-mode .passage-text::-webkit-scrollbar,
+body.nta-mode .typing-area::-webkit-scrollbar{ width:14px; }
+body.nta-mode .passage-text::-webkit-scrollbar-track,
+body.nta-mode .typing-area::-webkit-scrollbar-track{ background:#f0f0f0; border-left:1px solid #ddd; }
+body.nta-mode .passage-text::-webkit-scrollbar-thumb,
+body.nta-mode .typing-area::-webkit-scrollbar-thumb{ background:#cdcdcd; border:1px solid #f0f0f0; }
+body.nta-mode .passage-text::-webkit-scrollbar-thumb:hover,
+body.nta-mode .typing-area::-webkit-scrollbar-thumb:hover{ background:#a0a0a0; }
+
+/* F. Footer — .footer-container / .submit-area / .version-bar */
+body.nta-mode .nta-footer-container{
+  display:flex; flex-direction:column; width:100%; flex-shrink:0;
+}
+body.nta-mode .test-footer{
+  display:flex; justify-content:flex-end; align-items:center;
+  padding:0 20px; height:50px; background:#fff;
+  border-top:1px solid #b3ccff; flex-shrink:0; margin:0;
+}
+body.nta-mode .test-footer .btn{
+  background:#79b4e3; color:#fff; border:1px solid #5ca2d9;
+  padding:0; width:130px; height:38px; font-size:16px; border-radius:0;
+  font-weight:normal; display:flex; align-items:center; justify-content:center;
+}
+body.nta-mode .test-footer .btn:hover{ background:#63a8dc; }
+body.nta-mode .nta-version-footer{
+  display:flex; align-items:center; justify-content:center;
+  height:20px; background:#5a6b7c; color:#fff; font-size:10px;
+}
+
 @media (max-width:700px){
-  body.nta-mode .nta-tabs-row{ align-items:flex-start; }
-  body.nta-mode .toolbar{ top:auto; bottom:50px; right:8px; }
+  body.nta-mode .nta-typing-container{ width:100%; }
+  body.nta-mode .toolbar{ top:auto; bottom:56px; right:6px; }
 }

@@ -106,11 +106,13 @@
     <span class="nta-gov-title" id="ntaGovTitle">Typing Test</span>
     <div class="nta-gov-actions">
       <button class="nta-gov-link" id="ntaBtnSettings">⚙ Settings</button>
-      <button class="nta-gov-link" id="ntaBtnInstructions">ⓘ Instructions</button>
+      <button class="nta-gov-link" id="ntaBtnInstructions"><span class="icon-circle">i</span> Instructions</button>
     </div>
   </div>
 
-  <div class="nta-toplevel-tab" id="ntaToplevelTab">Actual Typing</div>
+  <div class="nta-toplevel-tab-row" id="ntaToplevelTabRow">
+    <div class="nta-toplevel-tab" id="ntaToplevelTab">Actual Typing</div>
+  </div>
 
   <div class="nta-tabs-row" id="ntaTabsRow">
     <div class="nta-sections">
@@ -152,23 +154,26 @@
   <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
 
   <div class="test-body">
-    <div class="passage-pane" id="passagePane">
-      <div class="pane-label">Original Passage</div>
-      <div class="passage-text" id="passageText"></div>
-      <div class="nta-watermark" id="ntaWatermark" aria-hidden="true"></div>
-    </div>
+    <div class="nta-typing-container" id="ntaTypingContainer">
+      <div class="passage-pane" id="passagePane">
+        <div class="pane-label">Original Passage</div>
+        <div class="passage-text" id="passageText"></div>
+      </div>
 
-    <div class="typing-pane">
-      <div class="pane-label">Your Typing <span id="paperScreenNotice" class="hint" hidden>— passage hidden (Paper‑to‑Screen mode)</span></div>
-      <textarea id="typingArea" class="typing-area" placeholder="Start typing here… timer begins on your first keystroke." spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+      <div class="typing-pane" id="typingPane">
+        <div class="pane-label">Your Typing <span id="paperScreenNotice" class="hint" hidden>— passage hidden (Paper‑to‑Screen mode)</span></div>
+        <textarea id="typingArea" class="typing-area" placeholder="Start typing here… timer begins on your first keystroke." spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+      </div>
     </div>
+    <div class="nta-watermark" id="ntaWatermark" aria-hidden="true"></div>
   </div>
 
-  <div class="test-footer">
-    <button class="btn btn-secondary" id="btnSubmitEarly">Submit Test</button>
+  <div class="nta-footer-container" id="ntaFooterContainer">
+    <div class="test-footer">
+      <button class="btn btn-secondary" id="btnSubmitEarly">Submit Test</button>
+    </div>
+    <div class="nta-version-footer" id="ntaVersionFooter">Version : 17.07.00</div>
   </div>
-
-  <div class="nta-version-footer" id="ntaVersionFooter">Version : 17.07.00</div>
 
 </main>
 

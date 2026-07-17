@@ -435,6 +435,10 @@ function startTest(passage){
   $("#progressFill").style.width = "0%";
 
   applyTypographySettings();
+  if(state.settings.examInterface === "on"){
+    $("#passageText").style.fontSize = "20px";
+    $("#typingArea").style.fontSize = "18px";
+  }
   resetPassageAutoScroll();
   renderPassageWords(passage.text, "");
 
@@ -510,55 +514,56 @@ function renderPassageWords(originalText, typedText){
 }
 
 /* ---------------------------------------------------------------------
-   Auto Scroll Passage — line-by-line, exactly like the official
-   NTA/TCS/DSSSB typing exam:
-     - The passage stays completely still while the candidate types
-       within the lines currently on screen.
-     - The instant the current word's line becomes the LAST visible
-       line, the passage jumps up by EXACTLY ONE rendered line height —
-       a single hard cut, no smooth animation, no partial scrolling.
-     - It only re-checks when the candidate has actually moved onto a
-       new line (never mid-line, never once per keystroke/word).
-     - If the setting is OFF, this function is never called with any
-       scrolling effect — the passage never auto-scrolls.
+   Auto Scroll Passage — matched frame-by-frame against the reference
+   screen recording (eztyping.com DSSSB portal):
+     - The passage stays completely still while the current line is
+       comfortably inside the visible box.
+     - Once the current line gets within one line-height of the bottom
+       edge, the box performs ONE short, smoothly-animated scroll
+       (native browser smooth scroll, ~200-300ms) that brings the
+       current word back to a comfortable position — not a fixed
+       one-line hard cut, matching the reference's non-uniform,
+       animated jump size.
+     - It does not re-trigger on every keystroke: once scrolled, the
+       word is no longer near the edge, so nothing happens again until
+       typing reaches the edge again.
+     - If the setting is OFF, this function never touches scrollTop —
+       the passage never auto-scrolls.
    --------------------------------------------------------------------- */
-const passageScrollState = { scrolledLines: 0, lastLine: -1 };
+function getPassageScrollEl(){
+  const textEl = $("#passageText");
+  const overflowY = getComputedStyle(textEl).overflowY;
+  if(overflowY === "auto" || overflowY === "scroll") return textEl;
+  return $("#passagePane");
+}
 
 function resetPassageAutoScroll(){
-  passageScrollState.scrolledLines = 0;
-  passageScrollState.lastLine = -1;
-  const pane = $("#passagePane");
-  if(pane) pane.scrollTop = 0;
+  const el = getPassageScrollEl();
+  if(el) el.scrollTop = 0;
 }
 
 function updatePassageAutoScroll(){
   if(state.settings.autoScrollPassage !== "on") return;
 
-  const pane = $("#passagePane");
+  const scrollEl = getPassageScrollEl();
   const textEl = $("#passageText");
   const current = textEl.querySelector(".word.current");
-  if(!pane || !current) return;
+  if(!scrollEl || !current) return;
 
   const lineHeight = parseFloat(getComputedStyle(textEl).lineHeight);
   if(!lineHeight || Number.isNaN(lineHeight)) return;
 
-  // Which rendered line (0-based) the current word sits on. #passageText
-  // has position:relative (style.css) so offsetTop is measured from the
-  // very top of the full passage, unaffected by the pane's own scroll.
-  const currentLine = Math.round(current.offsetTop / lineHeight);
+  const paneRect = scrollEl.getBoundingClientRect();
+  const curRect = current.getBoundingClientRect();
 
-  // Only re-evaluate when the candidate has actually crossed onto a
-  // different line — never on every keystroke/word within the same line.
-  if(currentLine === passageScrollState.lastLine) return;
-  passageScrollState.lastLine = currentLine;
+  // Only scroll once the current line is about to run out of visible
+  // room (within one line of the bottom edge) — never while it's still
+  // comfortably in view.
+  const nearBottom = curRect.bottom > paneRect.bottom - lineHeight;
+  const aboveTop = curRect.top < paneRect.top;
+  if(!nearBottom && !aboveTop) return;
 
-  const visibleLines = Math.max(Math.floor(pane.clientHeight / lineHeight), 1);
-  const lastVisibleLine = passageScrollState.scrolledLines + visibleLines - 1;
-
-  if(currentLine >= lastVisibleLine){
-    passageScrollState.scrolledLines += 1;
-    pane.scrollTop = passageScrollState.scrolledLines * lineHeight; // instant, exact one-line jump — no animation
-  }
+  current.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
 }
 
 function escapeHtml(str){
@@ -899,6 +904,13 @@ function computeDiff(originalText, typedText, options = {}){
    -------------------------------------------------------------------------- */
 function wireTypingArea(){
   const area = $("#typingArea");
+
+  // Visual-only: mirrors the reference's .input-box-wrapper.focused state
+  // (4px orange border only while the textarea has focus). Has no effect
+  // unless NTA mode is on ( .nta-focused only does anything under
+  // body.nta-mode in style.css).
+  area.addEventListener("focus", () => $("#typingPane").classList.add("nta-focused"));
+  area.addEventListener("blur", () => $("#typingPane").classList.remove("nta-focused"));
 
   area.addEventListener("keydown", (e) => {
     if(state.finished) { e.preventDefault(); return; }
@@ -1380,6 +1392,16 @@ function applyExamInterfaceMode(){
   document.body.classList.toggle("nta-mode", on);
   if(on && state.currentPassage){
     $("#ntaGovTitle").textContent = state.currentPassage.title;
+  }
+  // applyTypographySettings() sets font-size as an inline style, which
+  // beats any CSS class rule — so the reference's exact 20px passage /
+  // 18px typing sizes have to be applied the same way here, and undone
+  // (by re-running the user's own typography setting) when switching off.
+  if(on){
+    $("#passageText").style.fontSize = "20px";
+    $("#typingArea").style.fontSize = "18px";
+  } else {
+    applyTypographySettings();
   }
 }
 
