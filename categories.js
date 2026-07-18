@@ -75,6 +75,19 @@ const CATEGORIES = [
       type: "dsssb",
       qualifyWpm: 35
     }
+  },
+
+  {
+    id: "dsssb_new",
+    title: "DSSSB New Typing",
+    subtitle: "23 passages · Official DSSSB evaluation",
+    description: "A fresh set of current-affairs passages in the official DSSSB pattern, scored with the same net-speed formula as the main JSA set.",
+    icon: "🆕",
+    getPassages: () => PASSAGES_DSSSB_NEW,
+    evaluation: {
+      type: "dsssb",
+      qualifyWpm: 35
+    }
   }
 
   // Example of a future category with its own scoring rules (NTPC, AIIMS
