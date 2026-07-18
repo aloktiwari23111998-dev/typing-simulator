@@ -440,7 +440,8 @@ function startTest(passage){
     $("#typingArea").style.fontSize = "18px";
   }
   resetPassageAutoScroll();
-  renderPassageWords(passage.text, "");
+  buildPassageDom(passage.text);
+  updateTypingProgress(passage.text, "");
 
   const isPaper = state.settings.mode === "paper";
   $("#paperScreenNotice").hidden = !isPaper;
@@ -482,28 +483,58 @@ function runCountdown(seconds, onDone){
   }, 1000);
 }
 
-// Renders the original passage with per-word span classes for live highlighting.
-function renderPassageWords(originalText, typedText){
-  // Auto Scroll needs a '.word.current' DOM anchor to measure the active
-  // typing position via the Range API — that anchor must exist
+// Builds the passage's word-span DOM exactly ONCE per test. Stable
+// element references are kept in state.passageWordEls so every
+// subsequent keystroke only toggles className on existing nodes —
+// nothing is torn down and rebuilt, so an in-flight scroll animation or
+// a Range-API measurement is never disrupted by a DOM replacement.
+function buildPassageDom(originalText){
+  const expectedWords = tokenize(originalText);
+  const frag = document.createDocumentFragment();
+  const els = [];
+  expectedWords.forEach((word, i) => {
+    if(i > 0) frag.appendChild(document.createTextNode(" "));
+    const span = document.createElement("span");
+    span.className = "word pending";
+    span.textContent = word;
+    frag.appendChild(span);
+    els.push(span);
+  });
+  const passageTextEl = $("#passageText");
+  passageTextEl.innerHTML = "";
+  passageTextEl.appendChild(frag);
+  state.passageWordEls = els;
+  state.passageExpectedWords = expectedWords;
+}
+
+// Renders live typing progress by toggling className on the already-
+// built word spans (see buildPassageDom) — never rebuilds the DOM.
+function updateTypingProgress(originalText, typedText){
+  // Auto Scroll needs a stable '.word.current' DOM anchor to measure the
+  // active typing position via the Range API — that anchor must exist
   // regardless of the autoHighlight preference, otherwise turning off
-  // live correct/incorrect coloring silently disables auto-scroll too
-  // (they are unrelated features and must not be coupled).
+  // live correct/incorrect coloring would silently disable auto-scroll
+  // too (they are unrelated features and must not be coupled).
   const highlightOn = state.settings.autoHighlight !== "off";
 
-  const expectedWords = tokenize(originalText);
+  const expectedWords = state.passageExpectedWords || tokenize(originalText);
+  const wordEls = state.passageWordEls;
+  if(!wordEls || wordEls.length !== expectedWords.length){
+    buildPassageDom(originalText); // safety net if called before build
+  }
+
   const typedWords = typedText.length ? typedText.trim().split(/\s+/) : [];
   const currentIndex = typedText.endsWith(" ") || typedText.length === 0
     ? typedWords.length
     : Math.max(typedWords.length - 1, 0);
 
-  const html = expectedWords.map((word, i) => {
+  for(let i = 0; i < state.passageWordEls.length; i++){
+    const word = expectedWords[i];
     let cls;
     if(highlightOn){
       cls = "word pending";
       if(i < currentIndex){
-        const typedWord = typedWords[i];
-        cls = (typedWord === word) ? "word correct" : "word incorrect";
+        cls = (typedWords[i] === word) ? "word correct" : "word incorrect";
       }else if(i === currentIndex){
         cls = "word current";
       }
@@ -513,10 +544,9 @@ function renderPassageWords(originalText, typedText){
       // the current word is still tagged so Auto Scroll can find it.
       cls = (i === currentIndex) ? "word plain current" : "word plain";
     }
-    return `<span class="${cls}">${escapeHtml(word)}</span>`;
-  }).join(" ");
-
-  $("#passageText").innerHTML = html;
+    const el = state.passageWordEls[i];
+    if(el.className !== cls) el.className = cls; // skip no-op writes
+  }
 
   // How many characters into the active word the caret currently sits —
   // needed to pinpoint the exact active CHARACTER (not just the word)
@@ -525,37 +555,42 @@ function renderPassageWords(originalText, typedText){
     ? 0
     : (typedWords[typedWords.length - 1] || "").length;
 
-  updatePassageAutoScroll(typedInCurrentWord);
+  updatePassageAutoScroll(typedInCurrentWord, currentIndex);
 }
 
 /* ---------------------------------------------------------------------
-   Auto Scroll Passage — replicates the official DSSSB/NTA/TCS exam:
-     - While the typing position stays on any of the currently visible
-       lines: absolutely no scrolling.
-     - The moment the typing position moves onto a rendered line beyond
-       the current bottom visible line: the passage instantly moves up
-       by EXACTLY ONE rendered line (a hard cut, no animation) — never
-       two lines, never a fraction, never a variable amount.
-     - Exactly one scroll per rendered-line transition; nothing happens
-       again until the next transition.
-     - The rendered line is read straight from the browser's own layout
-       (the current word's offsetTop ÷ the element's computed
-       line-height) — never from character/word/newline counting, so it
-       stays correct regardless of viewport width or font size.
-     - Purely event-driven (runs once per keystroke via
-       renderPassageWords) — no polling, no timers, no rAF loops.
-     - Only the passage container's own scrollTop is touched — the
-       browser window itself is never scrolled.
+   Auto Scroll Passage — reverse-engineered frame-by-frame from the
+   official DSSSB/NTA/TCS reference recording (30fps analysis):
+     - A scroll event's motion profile measured from the video: 0 → 3 →
+       20 → 31 → 39 → 45 → 47 → 49px over ~200ms — a decelerating
+       (ease-out) curve, NOT an instant cut and NOT a linear scroll.
+     - The jump size (~49px against a ~30px rendered line-height, i.e.
+       ~1.6 lines) is not a clean single-line multiple — it behaves like
+       the active line being brought to a comfortable resting position
+       within the box, not a fixed one-line increment.
+     - The passage stays completely still while the active character is
+       comfortably inside the visible box; it animates only once the
+       active character is no longer comfortably in view.
+     - Only the passage container's own scrollTop is touched (native
+       scrollTop, not a transform/virtual-viewport) — this preserves
+       native wheel/scrollbar-drag manual scrolling for free, which a
+       transform-based viewport would have to reimplement from scratch.
+     - The animation is a short, bounded rAF loop (~220ms) — not a
+       continuous/polling loop — triggered only on a genuine line
+       transition, then it stops.
+     - The active character's rendered line is read via the Range API
+       against STABLE word-span DOM nodes (built once per test — see
+       buildPassageDom) — never from character/word/newline counting,
+       and never disrupted by a mid-animation DOM rebuild.
      - Manual scrolling (wheel / scrollbar drag) immediately pauses
-       auto-scroll; it resumes on its own once the typing position is
-       back in view, resyncing its internal line count to wherever the
-       person left the scroll so it doesn't jump.
+       auto-scroll; it resumes once the typing position is back in view,
+       resyncing so it doesn't jump.
      - If the setting is OFF, this never touches scrollTop at all.
    --------------------------------------------------------------------- */
 let passageAutoScrollPaused = false;
 let passageAutoScrollLastLine = -1;
-let passageAutoScrollLinesScrolled = 0;
 let passageAutoScrollListenersBound = false;
+let passageAutoScrollAnimId = null;
 
 function getPassageScrollEl(){
   const textEl = $("#passageText");
@@ -580,9 +615,10 @@ function bindPassageManualScrollPause(){
 
 function resetPassageAutoScroll(){
   bindPassageManualScrollPause();
+  if(passageAutoScrollAnimId) cancelAnimationFrame(passageAutoScrollAnimId);
+  passageAutoScrollAnimId = null;
   passageAutoScrollPaused = false;
   passageAutoScrollLastLine = -1;
-  passageAutoScrollLinesScrolled = 0;
   const el = getPassageScrollEl();
   if(el) el.scrollTop = 0;
 }
@@ -590,10 +626,10 @@ function resetPassageAutoScroll(){
 // Pinpoints the exact rendered position of the ACTIVE CHARACTER (the
 // next character the candidate is about to type) using the Range API,
 // rather than inferring it from the whole current-word <span>. The
-// current-word span's only child is a plain text node; a zero-width
-// Range placed at the caret's character offset inside that text node,
-// read via getClientRects(), gives the real on-screen position of that
-// exact character — independent of word-level assumptions.
+// current-word span's only child is a plain text node; a one-character
+// Range placed at the caret's offset inside that text node, read via
+// getClientRects(), gives the real on-screen position of that exact
+// character — independent of word-level assumptions.
 function getActiveCharRect(currentWordEl, typedInWord){
   const textNode = currentWordEl.firstChild;
   if(!textNode || textNode.nodeType !== Node.TEXT_NODE){
@@ -613,14 +649,41 @@ function getActiveCharRect(currentWordEl, typedInWord){
   return rects.length ? rects[0] : currentWordEl.getBoundingClientRect();
 }
 
-function updatePassageAutoScroll(typedInCurrentWord){
+function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+// Short, bounded rAF animation of scrollTop from wherever it currently
+// is to `target`, over `duration` ms with an ease-out curve — matches
+// the decelerating motion profile measured from the reference video.
+// Not a continuous/polling loop: it runs only for `duration` ms per
+// trigger, then stops itself.
+function animateScrollTop(el, target, duration){
+  if(passageAutoScrollAnimId) cancelAnimationFrame(passageAutoScrollAnimId);
+  const start = el.scrollTop;
+  const delta = target - start;
+  if(Math.abs(delta) < 0.5){ el.scrollTop = target; return; }
+  const startTime = performance.now();
+
+  function step(now){
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    el.scrollTop = start + delta * easeOutCubic(t);
+    if(t < 1){
+      passageAutoScrollAnimId = requestAnimationFrame(step);
+    } else {
+      passageAutoScrollAnimId = null;
+    }
+  }
+  passageAutoScrollAnimId = requestAnimationFrame(step);
+}
+
+function updatePassageAutoScroll(typedInCurrentWord, currentWordIndex){
   if(state.settings.autoScrollPassage !== "on") return;
 
   const scrollEl = getPassageScrollEl();
-  const textEl = $("#passageText");
-  const current = textEl.querySelector(".word.current");
+  const current = state.passageWordEls && state.passageWordEls[currentWordIndex];
   if(!scrollEl || !current) return;
 
+  const textEl = $("#passageText");
   const lineHeight = parseFloat(getComputedStyle(textEl).lineHeight);
   if(!lineHeight || Number.isNaN(lineHeight)) return;
 
@@ -635,32 +698,30 @@ function updatePassageAutoScroll(typedInCurrentWord){
     const backInView = charRect.top >= scrollElRect.top - EPS && charRect.bottom <= scrollElRect.bottom + EPS;
     if(!backInView) return;
     passageAutoScrollPaused = false;
-    // Resync to wherever the person left the scroll so the next
-    // transition continues smoothly instead of jumping back.
-    passageAutoScrollLinesScrolled = Math.round(scrollEl.scrollTop / lineHeight);
   }
 
-  // The active character's rendered top, converted from viewport
-  // coordinates into the scroll container's own content coordinates
-  // (i.e. what its "offsetTop" would be), then divided by the real
-  // rendered line-height to get its exact visual line index. This is
-  // measured straight from layout — never from character/word/newline
-  // counting.
+  // Which rendered line (0-based, as the browser actually laid it out)
+  // the active character sits on — read purely from layout via Range API.
   const charTopInContent = (charRect.top - scrollElRect.top) + scrollEl.scrollTop;
   const currentLine = Math.round(charTopInContent / lineHeight);
   if(currentLine === passageAutoScrollLastLine) return; // still the same line — never scroll mid-line
   passageAutoScrollLastLine = currentLine;
 
-  const visibleLines = Math.max(Math.floor(scrollEl.clientHeight / lineHeight), 1);
-  const lastVisibleLine = passageAutoScrollLinesScrolled + visibleLines - 1;
+  // Comfortable "safe zone": the active line only needs to scroll once
+  // it gets within one line-height of the bottom edge (or above the top
+  // entirely, e.g. after backspacing) — matching the reference, which
+  // doesn't move on every single line, only when the line is about to
+  // run out of room.
+  const nearBottom = charRect.bottom > scrollElRect.bottom - lineHeight;
+  const aboveTop = charRect.top < scrollElRect.top;
+  if(!nearBottom && !aboveTop) return;
 
-  // Only when the active character has moved onto a rendered line
-  // beyond the current bottom visible line — never while it's still
-  // on-screen.
-  if(currentLine <= lastVisibleLine) return;
-
-  passageAutoScrollLinesScrolled += 1; // exactly one line, never more
-  scrollEl.scrollTo({ top: passageAutoScrollLinesScrolled * lineHeight, behavior: "instant" });
+  // Target: bring the active line to a comfortable resting position —
+  // roughly centered in the box, leaving room both above and below —
+  // matching the reference's non-integer, "settles into place" jump
+  // rather than a rigid one-line increment.
+  const target = Math.max(0, charTopInContent - scrollEl.clientHeight / 2 + lineHeight / 2);
+  animateScrollTop(scrollEl, target, 220);
 }
 
 function escapeHtml(str){
@@ -727,7 +788,7 @@ function updateLiveStats(){
   $("#progressFill").style.width = progress + "%";
 
   if(state.settings.mode === "screen"){
-    renderPassageWords(passage.text, typedText);
+    updateTypingProgress(passage.text, typedText);
   }
 }
 
