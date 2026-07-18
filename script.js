@@ -514,26 +514,32 @@ function renderPassageWords(originalText, typedText){
 }
 
 /* ---------------------------------------------------------------------
-   Auto Scroll Passage:
-     - The current VISUAL LINE is read straight from the browser's own
-       rendered layout (current word's offsetTop ÷ the element's actual
-       computed line-height) — never from a character or word count.
-     - The passage stays completely still until that line's content no
-       longer fits in the visible box (i.e. the line has just been
-       completed and typing has moved to the next one).
-     - Only then does it scroll — smoothly, by ~one rendered line height
-       (slightly less, so the just-completed line stays partly peeking
-       at the top while the next line is revealed) — never a multi-line
-       jump, never on every keystroke.
+   Auto Scroll Passage — replicates the official DSSSB/NTA/TCS exam:
+     - While the typing position stays on any of the currently visible
+       lines: absolutely no scrolling.
+     - The moment the typing position moves onto a rendered line beyond
+       the current bottom visible line: the passage instantly moves up
+       by EXACTLY ONE rendered line (a hard cut, no animation) — never
+       two lines, never a fraction, never a variable amount.
+     - Exactly one scroll per rendered-line transition; nothing happens
+       again until the next transition.
+     - The rendered line is read straight from the browser's own layout
+       (the current word's offsetTop ÷ the element's computed
+       line-height) — never from character/word/newline counting, so it
+       stays correct regardless of viewport width or font size.
+     - Purely event-driven (runs once per keystroke via
+       renderPassageWords) — no polling, no timers, no rAF loops.
      - Only the passage container's own scrollTop is touched — the
        browser window itself is never scrolled.
-     - If the person scrolls the passage manually (wheel or dragging the
-       scrollbar), auto-scroll pauses immediately. It resumes on its own
-       once the current typing position is back in view.
+     - Manual scrolling (wheel / scrollbar drag) immediately pauses
+       auto-scroll; it resumes on its own once the typing position is
+       back in view, resyncing its internal line count to wherever the
+       person left the scroll so it doesn't jump.
      - If the setting is OFF, this never touches scrollTop at all.
    --------------------------------------------------------------------- */
 let passageAutoScrollPaused = false;
 let passageAutoScrollLastLine = -1;
+let passageAutoScrollLinesScrolled = 0;
 let passageAutoScrollListenersBound = false;
 
 function getPassageScrollEl(){
@@ -561,6 +567,7 @@ function resetPassageAutoScroll(){
   bindPassageManualScrollPause();
   passageAutoScrollPaused = false;
   passageAutoScrollLastLine = -1;
+  passageAutoScrollLinesScrolled = 0;
   const el = getPassageScrollEl();
   if(el) el.scrollTop = 0;
 }
@@ -576,33 +583,34 @@ function updatePassageAutoScroll(){
   const lineHeight = parseFloat(getComputedStyle(textEl).lineHeight);
   if(!lineHeight || Number.isNaN(lineHeight)) return;
 
-  const paneRect = scrollEl.getBoundingClientRect();
-  const curRect = current.getBoundingClientRect();
-
   if(passageAutoScrollPaused){
     // Resume automatically once the typing position is back in view —
     // i.e. the person scrolled back to roughly where they're typing.
+    const paneRect = scrollEl.getBoundingClientRect();
+    const curRect = current.getBoundingClientRect();
     const backInView = curRect.top >= paneRect.top && curRect.bottom <= paneRect.bottom;
     if(!backInView) return;
     passageAutoScrollPaused = false;
+    // Resync to wherever the person left the scroll so the next
+    // transition continues smoothly instead of jumping back.
+    passageAutoScrollLinesScrolled = Math.round(scrollEl.scrollTop / lineHeight);
   }
 
-  // Which visual line (as actually rendered by the browser) the current
-  // word sits on — read from layout, not counted from characters/words.
+  // Which rendered line (0-based, as the browser actually laid it out)
+  // the current word sits on — read purely from layout.
   const currentLine = Math.round(current.offsetTop / lineHeight);
   if(currentLine === passageAutoScrollLastLine) return; // still the same line — never scroll mid-line
   passageAutoScrollLastLine = currentLine;
 
-  // Absolute target position (not a relative += increment): computed
-  // purely from the completed line's index and the element's own
-  // lineHeight, so it's exact regardless of whatever mid-animation
-  // scrollTop the browser's native smooth-scroll happens to be at right
-  // now. Leaves ~1/4 of the just-completed line peeking at the top
-  // while the new line is fully revealed below it. Fires on every
-  // completed line, not just when the box happens to overflow.
-  const peek = Math.round(lineHeight * 0.25);
-  const target = Math.max(0, currentLine * lineHeight - peek);
-  scrollEl.scrollTop = target;
+  const visibleLines = Math.max(Math.floor(scrollEl.clientHeight / lineHeight), 1);
+  const lastVisibleLine = passageAutoScrollLinesScrolled + visibleLines - 1;
+
+  // Only when the typing position has moved onto a line beyond the
+  // current bottom visible line — never while it's still on-screen.
+  if(currentLine <= lastVisibleLine) return;
+
+  passageAutoScrollLinesScrolled += 1; // exactly one line, never more
+  scrollEl.scrollTo({ top: passageAutoScrollLinesScrolled * lineHeight, behavior: "instant" });
 }
 
 function escapeHtml(str){
