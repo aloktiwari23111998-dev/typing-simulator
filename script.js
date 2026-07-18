@@ -484,12 +484,12 @@ function runCountdown(seconds, onDone){
 
 // Renders the original passage with per-word span classes for live highlighting.
 function renderPassageWords(originalText, typedText){
-  if(state.settings.autoHighlight === "off"){
-    // Plain, ungraded passage text — no live correct/incorrect feedback,
-    // matching a real exam sheet with no on-screen assistance.
-    $("#passageText").textContent = originalText;
-    return;
-  }
+  // Auto Scroll needs a '.word.current' DOM anchor to measure the active
+  // typing position via the Range API — that anchor must exist
+  // regardless of the autoHighlight preference, otherwise turning off
+  // live correct/incorrect coloring silently disables auto-scroll too
+  // (they are unrelated features and must not be coupled).
+  const highlightOn = state.settings.autoHighlight !== "off";
 
   const expectedWords = tokenize(originalText);
   const typedWords = typedText.length ? typedText.trim().split(/\s+/) : [];
@@ -498,12 +498,20 @@ function renderPassageWords(originalText, typedText){
     : Math.max(typedWords.length - 1, 0);
 
   const html = expectedWords.map((word, i) => {
-    let cls = "word pending";
-    if(i < currentIndex){
-      const typedWord = typedWords[i];
-      cls = (typedWord === word) ? "word correct" : "word incorrect";
-    }else if(i === currentIndex){
-      cls = "word current";
+    let cls;
+    if(highlightOn){
+      cls = "word pending";
+      if(i < currentIndex){
+        const typedWord = typedWords[i];
+        cls = (typedWord === word) ? "word correct" : "word incorrect";
+      }else if(i === currentIndex){
+        cls = "word current";
+      }
+    } else {
+      // No live feedback, matching a real exam sheet with no on-screen
+      // assistance — every word stays visually neutral ("plain"), but
+      // the current word is still tagged so Auto Scroll can find it.
+      cls = (i === currentIndex) ? "word plain current" : "word plain";
     }
     return `<span class="${cls}">${escapeHtml(word)}</span>`;
   }).join(" ");
@@ -622,7 +630,9 @@ function updatePassageAutoScroll(typedInCurrentWord){
   if(passageAutoScrollPaused){
     // Resume automatically once the typing position is back in view —
     // i.e. the person scrolled back to roughly where they're typing.
-    const backInView = charRect.top >= scrollElRect.top && charRect.bottom <= scrollElRect.bottom;
+    const EPS = 1; // px tolerance — strict rect comparisons can fail to ever
+                   // satisfy due to sub-pixel rounding, permanently stuck paused
+    const backInView = charRect.top >= scrollElRect.top - EPS && charRect.bottom <= scrollElRect.bottom + EPS;
     if(!backInView) return;
     passageAutoScrollPaused = false;
     // Resync to wherever the person left the scroll so the next

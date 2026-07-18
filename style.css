@@ -309,6 +309,8 @@ input, select, textarea{ font-family: inherit; }
 .passage-text .word.correct{ color: var(--success); }
 .passage-text .word.incorrect{ color: var(--danger); text-decoration: underline wavy var(--danger); }
 .passage-text .word.pending{ color: var(--text-secondary); }
+.passage-text .word.plain{ color: inherit; }
+.passage-text .word.plain.current{ background: none; outline: none; }
 
 .typing-area{
   flex:1; resize:none; border:none; outline:none;
@@ -740,6 +742,8 @@ body.nta-mode .passage-text .word.pending{ color:#000; }
 body.nta-mode .passage-text .word.correct{ color:#1a7a3c; }
 body.nta-mode .passage-text .word.incorrect{ color:#c62828; text-decoration:underline wavy #c62828; }
 body.nta-mode .passage-text .word.current{ background:#fff3cd; outline:1px solid #f90; }
+body.nta-mode .passage-text .word.plain{ color:#000; }
+body.nta-mode .passage-text .word.plain.current{ background:none; outline:none; }
 
 /* Reference scrollbar styling (WebKit) */
 body.nta-mode .passage-text::-webkit-scrollbar,
