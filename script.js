@@ -510,7 +510,14 @@ function renderPassageWords(originalText, typedText){
 
   $("#passageText").innerHTML = html;
 
-  updatePassageAutoScroll();
+  // How many characters into the active word the caret currently sits —
+  // needed to pinpoint the exact active CHARACTER (not just the word)
+  // via the Range API below.
+  const typedInCurrentWord = (typedText.endsWith(" ") || typedText.length === 0)
+    ? 0
+    : (typedWords[typedWords.length - 1] || "").length;
+
+  updatePassageAutoScroll(typedInCurrentWord);
 }
 
 /* ---------------------------------------------------------------------
@@ -572,7 +579,33 @@ function resetPassageAutoScroll(){
   if(el) el.scrollTop = 0;
 }
 
-function updatePassageAutoScroll(){
+// Pinpoints the exact rendered position of the ACTIVE CHARACTER (the
+// next character the candidate is about to type) using the Range API,
+// rather than inferring it from the whole current-word <span>. The
+// current-word span's only child is a plain text node; a zero-width
+// Range placed at the caret's character offset inside that text node,
+// read via getClientRects(), gives the real on-screen position of that
+// exact character — independent of word-level assumptions.
+function getActiveCharRect(currentWordEl, typedInWord){
+  const textNode = currentWordEl.firstChild;
+  if(!textNode || textNode.nodeType !== Node.TEXT_NODE){
+    return currentWordEl.getBoundingClientRect();
+  }
+  const len = textNode.textContent.length;
+  if(len === 0) return currentWordEl.getBoundingClientRect();
+
+  let start = Math.min(Math.max(typedInWord, 0), len);
+  let end = Math.min(start + 1, len);
+  if(start === end) start = Math.max(end - 1, 0); // caret sits right after the last character
+
+  const range = document.createRange();
+  range.setStart(textNode, start);
+  range.setEnd(textNode, end);
+  const rects = range.getClientRects();
+  return rects.length ? rects[0] : currentWordEl.getBoundingClientRect();
+}
+
+function updatePassageAutoScroll(typedInCurrentWord){
   if(state.settings.autoScrollPassage !== "on") return;
 
   const scrollEl = getPassageScrollEl();
@@ -583,12 +616,13 @@ function updatePassageAutoScroll(){
   const lineHeight = parseFloat(getComputedStyle(textEl).lineHeight);
   if(!lineHeight || Number.isNaN(lineHeight)) return;
 
+  const scrollElRect = scrollEl.getBoundingClientRect();
+  const charRect = getActiveCharRect(current, typedInCurrentWord || 0);
+
   if(passageAutoScrollPaused){
     // Resume automatically once the typing position is back in view —
     // i.e. the person scrolled back to roughly where they're typing.
-    const paneRect = scrollEl.getBoundingClientRect();
-    const curRect = current.getBoundingClientRect();
-    const backInView = curRect.top >= paneRect.top && curRect.bottom <= paneRect.bottom;
+    const backInView = charRect.top >= scrollElRect.top && charRect.bottom <= scrollElRect.bottom;
     if(!backInView) return;
     passageAutoScrollPaused = false;
     // Resync to wherever the person left the scroll so the next
@@ -596,17 +630,23 @@ function updatePassageAutoScroll(){
     passageAutoScrollLinesScrolled = Math.round(scrollEl.scrollTop / lineHeight);
   }
 
-  // Which rendered line (0-based, as the browser actually laid it out)
-  // the current word sits on — read purely from layout.
-  const currentLine = Math.round(current.offsetTop / lineHeight);
+  // The active character's rendered top, converted from viewport
+  // coordinates into the scroll container's own content coordinates
+  // (i.e. what its "offsetTop" would be), then divided by the real
+  // rendered line-height to get its exact visual line index. This is
+  // measured straight from layout — never from character/word/newline
+  // counting.
+  const charTopInContent = (charRect.top - scrollElRect.top) + scrollEl.scrollTop;
+  const currentLine = Math.round(charTopInContent / lineHeight);
   if(currentLine === passageAutoScrollLastLine) return; // still the same line — never scroll mid-line
   passageAutoScrollLastLine = currentLine;
 
   const visibleLines = Math.max(Math.floor(scrollEl.clientHeight / lineHeight), 1);
   const lastVisibleLine = passageAutoScrollLinesScrolled + visibleLines - 1;
 
-  // Only when the typing position has moved onto a line beyond the
-  // current bottom visible line — never while it's still on-screen.
+  // Only when the active character has moved onto a rendered line
+  // beyond the current bottom visible line — never while it's still
+  // on-screen.
   if(currentLine <= lastVisibleLine) return;
 
   passageAutoScrollLinesScrolled += 1; // exactly one line, never more
