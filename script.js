@@ -827,10 +827,21 @@ function alignWords(expected, typed){
   const n = expected.length;
   const m = typed.length;
 
+  // Tiny tie-breaking bias (far smaller than any real cost, which are
+  // always in increments of 0.5 or 1) that favors alignments which stay
+  // close to the diagonal — i.e. don't unnecessarily "jump ahead" to a
+  // later coincidental repeat of the same word when an equally-cheap,
+  // straightforward in-order match/deletion exists. Without this, a
+  // repeated common word later in the passage can make a genuinely
+  // untyped trailing stretch look like a real mid-passage skip.
+  const BIAS = 1e-9;
+  const bias = (i, j) => BIAS * Math.abs(i - j);
+
   const dp = new Array(n + 1);
   for(let i = 0; i <= n; i++) dp[i] = new Array(m + 1).fill(0);
-  for(let i = 0; i <= n; i++) dp[i][0] = i;
-  for(let j = 0; j <= m; j++) dp[0][j] = j;
+  dp[0][0] = 0;
+  for(let i = 1; i <= n; i++) dp[i][0] = dp[i - 1][0] + 1 + bias(i, 0);
+  for(let j = 1; j <= m; j++) dp[0][j] = dp[0][j - 1] + 1 + bias(0, j);
 
   for(let i = 1; i <= n; i++){
     const expWord = expected[i - 1];
@@ -847,7 +858,7 @@ function alignWords(expected, typed){
         const trans = dp[i - 2][j - 2] + 1;
         if(trans < best) best = trans;
       }
-      dp[i][j] = best;
+      dp[i][j] = best + bias(i, j);
     }
   }
 
@@ -855,24 +866,24 @@ function alignWords(expected, typed){
   // sequence of operations that produced the minimum cost.
   const ops = [];
   let i = n, j = m;
-  const close = (a, b) => Math.abs(a - b) < 1e-9;
+  const close = (a, b) => Math.abs(a - b) < 1e-12;
 
   while(i > 0 || j > 0){
     if(i > 1 && j > 1 &&
        expected[i - 1] === typed[j - 2] && expected[i - 2] === typed[j - 1] &&
-       close(dp[i][j], dp[i - 2][j - 2] + 1)){
+       close(dp[i][j], dp[i - 2][j - 2] + 1 + bias(i, j))){
       ops.push({ type: "transpose", expIndex: i - 2, typIndex: j - 2 });
       i -= 2; j -= 2;
       continue;
     }
-    if(i > 0 && j > 0 && close(dp[i][j], dp[i - 1][j - 1] + wordCost(expected[i - 1], typed[j - 1]))){
+    if(i > 0 && j > 0 && close(dp[i][j], dp[i - 1][j - 1] + wordCost(expected[i - 1], typed[j - 1]) + bias(i, j))){
       const cost = wordCost(expected[i - 1], typed[j - 1]);
       const type = cost === 0 ? "match" : (cost === 0.5 ? "half-case" : "sub");
       ops.push({ type, expIndex: i - 1, typIndex: j - 1 });
       i -= 1; j -= 1;
       continue;
     }
-    if(i > 0 && close(dp[i][j], dp[i - 1][j] + 1)){
+    if(i > 0 && close(dp[i][j], dp[i - 1][j] + 1 + bias(i, j))){
       ops.push({ type: "del", expIndex: i - 1, typIndex: null });
       i -= 1;
       continue;
