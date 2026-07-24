@@ -141,9 +141,14 @@ const state = {
   // ---- Module 0: Keystroke Timing Logger (telemetry only — see section 4b) ----
   telemetry: [],              // flat array of per-event telemetry records, reset per test
   telemetryPrevValue: "",     // last-seen textarea value, used to diff() out what changed
-  telemetryPendingKey: null   // { key, code, timestamp } for the most recent keydown,
+  telemetryPendingKey: null,  // { key, code, timestamp } for the most recent keydown,
                               // used both to label the next 'input' event and to pair
                               // with 'keyup' for keyDownDurationMs
+  telemetryWordCache: { wordIndex: 0, wordStartPos: 0, lastLength: 0 }
+                              // PERFORMANCE FIX support field: running word-position
+                              // cache so computeTelemetryWordPosition() doesn't have
+                              // to re-scan the entire typed-so-far text on every
+                              // keystroke — see the comment on that function.
 };
 
 // Returns the passage array for whichever exam category is currently open,
@@ -425,6 +430,7 @@ function startTest(passage){
   state.telemetry = [];
   state.telemetryPrevValue = "";
   state.telemetryPendingKey = null;
+  state.telemetryWordCache = { wordIndex: 0, wordStartPos: 0, lastLength: 0 };
   startAmbience();
 
   $("#homeScreen").hidden = true;
@@ -1183,12 +1189,39 @@ function isTelemetryContentKey(key){
   return key.length === 1 || key === "Backspace" || key === "Delete" || key === "Enter";
 }
 
-// Minimal common-prefix/suffix diff between the previous and current
-// textarea value — robust regardless of where the caret is, so it works
-// whether typing continues at the end or the person has moved the caret
-// with the arrow keys. Paste/cut/drop are already prevented elsewhere in
-// the app, so inserted/removed spans in normal use stay small.
-function diffTelemetryValues(oldVal, newVal){
+// PERFORMANCE FIX (bug found and fixed after the fact — see the comment
+// block above the caller, recordTelemetryCharacterEvent, for the full
+// story): the overwhelmingly common edit during a timed typing test is a
+// single character typed or backspaced at the very end of the textarea.
+// The original version below always ran a full prefix/suffix scan over
+// the ENTIRE typed-so-far string on every keystroke — cheap early in a
+// test, but its cost grows with how much has already been typed, so a
+// long passage's LATER keystrokes (and everything sharing that input
+// event, including auto-scroll's own per-keystroke work) got
+// progressively slower — an O(n) scan per key adds up to O(n^2) over a
+// full passage.
+//
+// cursorAtEnd (area.selectionStart === newVal.length, passed in by the
+// caller) lets us detect the common case with ZERO scanning and take an
+// O(1) path. Any edit NOT at the end (arrow-key repositioning, multi-
+// character change) safely falls through to the original, fully-general
+// scan below — correctness is identical to before, only the common case
+// got faster.
+function diffTelemetryValues(oldVal, newVal, cursorAtEnd){
+  if(cursorAtEnd){
+    if(newVal.length === oldVal.length + 1){
+      // Single character appended at the end.
+      return { removed: "", inserted: newVal.charAt(newVal.length - 1) };
+    }
+    if(oldVal.length === newVal.length + 1){
+      // Single character (normal Backspace) removed from the end.
+      return { removed: oldVal.charAt(oldVal.length - 1), inserted: "" };
+    }
+  }
+
+  // General case (unchanged from the original implementation) — a
+  // minimal common-prefix/suffix diff, used whenever the fast path above
+  // doesn't apply.
   let start = 0;
   const maxStart = Math.min(oldVal.length, newVal.length);
   while(start < maxStart && oldVal[start] === newVal[start]) start++;
@@ -1205,18 +1238,68 @@ function diffTelemetryValues(oldVal, newVal){
   };
 }
 
-// Standalone word-position calculator for telemetry — deliberately NOT
-// reusing updateTypingProgress()'s internals so that function stays
-// completely untouched. Mirrors the same word-splitting rule it already
-// uses (trim + split on whitespace) purely for consistency of results.
-function computeTelemetryWordPosition(typedText){
-  const typedWords = typedText.length ? typedText.trim().split(/\s+/) : [];
-  const wordIndex = typedText.endsWith(" ") || typedText.length === 0
+// PERFORMANCE FIX (see the note above diffTelemetryValues for the full
+// story — this was the second, larger contributor to the same reported
+// lag). The original version below called `typedText.trim().split(/\s+/)`
+// on every single keystroke, re-splitting the ENTIRE typed-so-far text
+// into words each time — cost grows with how much has already been
+// typed, so this got slower and slower as a long passage went on.
+//
+// state.telemetryWordCache keeps a running {wordIndex, wordStartPos} so
+// the common cases (typing or backspacing at the end, without crossing a
+// word boundary) are O(1) — no re-splitting at all. It's reset alongside
+// the rest of Module 0's telemetry state in startTest(). The rare cases
+// (a Backspace that deletes back across a space into the previous word,
+// or the caret having been moved elsewhere) fall through to the original
+// full recompute, which also refreshes the cache — correctness is
+// identical to before, only the common case got faster.
+function computeTelemetryWordPosition(typedText, cursorAtEnd){
+  if(typedText.length === 0){
+    state.telemetryWordCache.wordIndex = 0;
+    state.telemetryWordCache.wordStartPos = 0;
+    return { wordIndex: 0, charIndexInWord: 0 };
+  }
+
+  const cache = state.telemetryWordCache;
+
+  if(cursorAtEnd && typedText.length >= cache.wordStartPos){
+    const justTypedChar = typedText.charAt(typedText.length - 1);
+    const withinSameWord = typedText.length - cache.wordStartPos >= 0;
+
+    if(withinSameWord && typedText.length === cache.lastLength + 1 && justTypedChar !== " "){
+      // One non-space character appended within the current word.
+      cache.lastLength = typedText.length;
+      return { wordIndex: cache.wordIndex, charIndexInWord: typedText.length - cache.wordStartPos };
+    }
+    if(withinSameWord && typedText.length === cache.lastLength + 1 && justTypedChar === " "){
+      // A space just finished the current word — advance to the next one.
+      cache.wordIndex += 1;
+      cache.wordStartPos = typedText.length;
+      cache.lastLength = typedText.length;
+      return { wordIndex: cache.wordIndex, charIndexInWord: 0 };
+    }
+    if(typedText.length === cache.lastLength - 1 && typedText.length >= cache.wordStartPos){
+      // A normal Backspace that stayed inside the current word.
+      cache.lastLength = typedText.length;
+      return { wordIndex: cache.wordIndex, charIndexInWord: typedText.length - cache.wordStartPos };
+    }
+  }
+
+  // Rare fallback: caret elsewhere, multi-character change, or a
+  // Backspace that crossed back over a space into the previous word —
+  // the original full recompute (unchanged logic), which also refreshes
+  // the cache so the fast path above can resume from here.
+  const typedWords = typedText.trim().split(/\s+/);
+  const wordIndex = typedText.endsWith(" ")
     ? typedWords.length
     : Math.max(typedWords.length - 1, 0);
-  const charIndexInWord = (typedText.endsWith(" ") || typedText.length === 0)
+  const charIndexInWord = typedText.endsWith(" ")
     ? 0
     : (typedWords[typedWords.length - 1] || "").length;
+
+  cache.wordIndex = wordIndex;
+  cache.wordStartPos = typedText.length - charIndexInWord;
+  cache.lastLength = typedText.length;
   return { wordIndex, charIndexInWord };
 }
 
@@ -1278,11 +1361,12 @@ function recordTelemetryCharacterEvent(){
   const area = $("#typingArea");
   const newValue = area.value;
   const oldValue = state.telemetryPrevValue;
-  const { removed, inserted } = diffTelemetryValues(oldValue, newValue);
+  const cursorAtEnd = area.selectionStart === newValue.length; // enables the O(1) fast paths below
+  const { removed, inserted } = diffTelemetryValues(oldValue, newValue, cursorAtEnd);
   state.telemetryPrevValue = newValue;
 
   const isCorrection = removed.length > 0 && inserted.length === 0;
-  const { wordIndex, charIndexInWord } = computeTelemetryWordPosition(newValue);
+  const { wordIndex, charIndexInWord } = computeTelemetryWordPosition(newValue, cursorAtEnd);
   const expectedChar = isCorrection ? null : getExpectedCharForTelemetry(wordIndex, charIndexInWord);
   const typedChar = inserted.length ? inserted[inserted.length - 1] : null;
 
