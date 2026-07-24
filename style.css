@@ -409,6 +409,8 @@ input, select, textarea{ font-family: inherit; }
 .dot.missing{ background: var(--warning); }
 .dot.extra{ background: #B36BFF; }
 .dot.half{ background: #6BB8FF; }
+.dot.capitalization{ background: #6BB8FF; }
+.dot.transposition{ background: #2ED8B6; }
 .dot.untyped{ background: var(--text-secondary); }
 
 .compare-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
@@ -422,6 +424,8 @@ input, select, textarea{ font-family: inherit; }
 .compare-text .w-missing{ color: var(--warning); text-decoration: line-through; }
 .compare-text .w-extra{ color: #B36BFF; }
 .compare-text .w-half{ color: #6BB8FF; text-decoration: underline dotted #6BB8FF; }
+.compare-text .w-half-cap{ color: #6BB8FF; text-decoration: underline dotted #6BB8FF; }
+.compare-text .w-half-transpose{ color: #2ED8B6; text-decoration: underline dotted #2ED8B6; }
 .compare-text .w-untyped{ color: var(--text-secondary); opacity: 0.55; }
 
 .table-wrap{
@@ -432,6 +436,75 @@ input, select, textarea{ font-family: inherit; }
 .error-table th, .error-table td{ padding:10px 14px; text-align:left; border-bottom:1px solid var(--surface-border); white-space:nowrap; }
 .error-table th{ color: var(--text-secondary); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:0.4px; }
 .empty-note{ text-align:center; padding:20px; color: var(--text-secondary); }
+
+/* MODULE 4 — small inline percentage bar inside the breakdown table */
+.mb-bar-track{ display:inline-block; width:70px; height:6px; border-radius:3px; background: var(--surface-border); vertical-align:middle; margin-right:8px; }
+.mb-bar-fill{ display:block; height:100%; border-radius:3px; background: var(--accent, #4C7EFF); }
+
+/* MODULE 5 — canvas wrapper, sized by CSS not JS animation */
+.pace-chart-wrap{ position:relative; width:100%; height:220px; }
+.pace-chart-wrap canvas{ width:100%; height:100%; display:block; }
+
+/* MODULE 13 — active/idle time bar */
+.wt-bar-wrap{ margin-top:16px; }
+.wt-bar{ display:flex; width:100%; height:14px; border-radius:7px; overflow:hidden; background: var(--surface-border); }
+.wt-bar-active{ display:block; height:100%; background: var(--accent, #4C7EFF); }
+.wt-bar-idle{ display:block; height:100%; background: #FF8A5B; }
+.wt-bar-legend{ display:flex; gap:16px; margin-top:8px; font-size:12px; color: var(--text-secondary); }
+.wt-bar-legend .dot{ margin-right:5px; }
+
+/* MODULE 14 — overall score badge */
+.osp-summary{ display:flex; align-items:center; gap:24px; flex-wrap:wrap; margin-bottom:18px; }
+.osp-score-badge{ display:flex; align-items:baseline; gap:10px; }
+.osp-score{ font-size:44px; font-weight:800; color: var(--accent, #4C7EFF); }
+.osp-grade{ font-size:20px; font-weight:700; padding:4px 12px; border-radius:8px; background: var(--surface-border); }
+.osp-percentile{ color: var(--text-secondary); font-size:13.5px; }
+
+/* MODULE 15 — sticky quick-nav + collapsible dashboard sections */
+.dashboard-nav{
+  position:sticky; top:0; z-index:10;
+  display:flex; gap:6px; flex-wrap:nowrap; overflow-x:auto;
+  padding:10px 0; margin-bottom:24px;
+  background: var(--bg, #101014);
+  border-bottom:1px solid var(--surface-border);
+  -webkit-overflow-scrolling:touch;
+}
+.dashboard-nav a{
+  font-size:12px; padding:6px 10px; border-radius:14px;
+  background: var(--surface, #1c1c22); color: var(--text-secondary);
+  text-decoration:none; white-space:nowrap; flex-shrink:0;
+}
+.dashboard-nav a:hover{ color: var(--text-primary, #eee); }
+html{ scroll-behavior: smooth; }
+.dashboard-section > h2{ cursor:pointer; user-select:none; }
+.dashboard-section > h2::before{ content:"▾ "; font-size:12px; color: var(--text-secondary); }
+.dashboard-section.collapsed > h2::before{ content:"▸ "; }
+.dashboard-section.collapsed > *:not(h2){ display:none; }
+
+/* MODULE 7 — keyboard heatmap */
+.kb-heatmap{ display:flex; flex-direction:column; gap:6px; align-items:flex-start; max-width:100%; overflow-x:auto; padding-bottom:4px; }
+.kb-row{ display:flex; gap:6px; }
+.kb-key{
+  position:relative;
+  min-width:34px; height:34px; padding:0 6px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:6px; border:1px solid var(--surface-border);
+  background: var(--surface, #1c1c22); color: var(--text-primary, #eee);
+  font-size:12.5px; font-weight:600; cursor:default;
+}
+.kb-key.kb-nodata{ opacity:0.35; }
+.kb-key.kb-space{ min-width:220px; }
+.kb-key[data-tooltip]:hover::after{
+  content: attr(data-tooltip);
+  position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
+  background:#111; color:#fff; padding:6px 9px; border-radius:6px;
+  font-size:11.5px; font-weight:400; white-space:pre; z-index:5;
+  box-shadow:0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* MODULE 8 — pause-location chips */
+.pause-locations{ display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
+.pause-chip{ font-size:11.5px; padding:4px 8px; border-radius:12px; background: var(--surface-border); color: var(--text-secondary); }
 
 /* ==========================================================================
    MODAL (Settings + Countdown)
@@ -532,6 +605,11 @@ input, select, textarea{ font-family: inherit; }
   .topnav, .test-footer, .result-actions, .modal-overlay{ display:none !important; }
   body{ background:#fff; color:#000; }
   .result-card, .compare-col, .table-wrap{ border:1px solid #ccc; }
+  /* MODULE 15: never let a collapsed section disappear from the existing
+     Export PDF (Print) feature — always print full content regardless of
+     on-screen collapse state, and hide the nav bar (not useful on paper). */
+  .dashboard-nav{ display:none !important; }
+  .dashboard-section.collapsed > *:not(h2){ display:block !important; }
 }
 
 /* ==========================================================================

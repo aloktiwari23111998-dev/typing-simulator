@@ -263,6 +263,99 @@
     <button class="btn btn-primary" id="btnBackHome">Back to Home</button>
   </div>
 
+  <!-- ============================================================
+       MODULE 15 — FINAL RESULTS DASHBOARD (integration layer)
+       Pure navigation/UX glue over the modules already built above —
+       does not alter any of their markup beyond adding harmless
+       id/class attributes for anchor-linking and collapse (see
+       initDashboardNav() in script.js). The pre-existing original
+       sections (Show Complete Calculation, Diagnostic Report, Weak
+       Words Drill, Detailed Error Table) are intentionally left out
+       of this nav and untouched, per "do not redesign the existing
+       application".
+       ============================================================ -->
+  <nav class="dashboard-nav" id="dashboardNav" aria-label="Jump to a results section">
+    <a href="#kpsSection">Summary</a>
+    <a href="#mistakeLogSection">Mistake Log</a>
+    <a href="#comparisonSection">Comparison</a>
+    <a href="#mistakeBreakdownSection">Error Breakdown</a>
+    <a href="#paceSection">Pace</a>
+    <a href="#charPerfSection">Characters</a>
+    <a href="#keyboardHeatmapSection">Heatmap</a>
+    <a href="#speedZonesSection">Speed Zones</a>
+    <a href="#consistencySection">Consistency</a>
+    <a href="#fingerPerfSection">Fingers</a>
+    <a href="#latencyHistogramSection">Latency</a>
+    <a href="#staminaSection">Stamina</a>
+    <a href="#wastedTimeSection">Wasted Time</a>
+    <a href="#overallScoreSection">Overall Score</a>
+    <a href="#aiCoachSection">AI Coach</a>
+  </nav>
+
+  <!-- ============================================================
+       MODULE 1 — KEY PERFORMANCE SUMMARY
+       Pure presentation layer: every value below is either read
+       directly from the existing result object (populated by
+       finishTest() in script.js) or a trivial arithmetic derivation
+       of two already-computed values (see renderKeyPerformanceSummary
+       in script.js for exactly which). No new scoring, mistake
+       detection, or telemetry logic lives here.
+       Reuses the same .result-grid / .result-card / .rc-label /
+       .rc-value classes as the section above, so it automatically
+       matches the existing visual style and responsive behaviour —
+       no new CSS was added for this section.
+       ============================================================ -->
+  <section class="kps-section dashboard-section" id="kpsSection">
+    <h2>Key Performance Summary</h2>
+    <div class="result-grid">
+      <div class="result-card highlight">
+        <span class="rc-label">Net WPM</span>
+        <span class="rc-value" id="kpsNetWpm">0 WPM</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Gross WPM</span>
+        <span class="rc-value" id="kpsGrossWpm">0 WPM</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Accuracy</span>
+        <span class="rc-value" id="kpsAccuracy">0%</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Correct Characters</span>
+        <span class="rc-value" id="kpsCorrectChars">0</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Incorrect Characters</span>
+        <span class="rc-value" id="kpsIncorrectChars">0</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Total Characters Typed</span>
+        <span class="rc-value" id="kpsTotalChars">0</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Backspaces</span>
+        <span class="rc-value" id="kpsBackspaces">0</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Error Count</span>
+        <span class="rc-value" id="kpsErrorCount">0</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Test Duration</span>
+        <span class="rc-value" id="kpsDuration">00:00</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Completion</span>
+        <span class="rc-value" id="kpsCompletion">0%</span>
+      </div>
+      <div class="result-card info-only" id="kpsTimeRemainingCard" hidden>
+        <span class="rc-label">Time Remaining</span>
+        <span class="rc-value" id="kpsTimeRemaining">00:00</span>
+        <span class="rc-note">At submission</span>
+      </div>
+    </div>
+  </section>
+
   <section class="calc-section">
     <h2>Show Complete Calculation</h2>
     <div class="calc-box" id="calcSteps"><!-- populated by JS with the evaluator's own formula chain --></div>
@@ -283,17 +376,25 @@
     <div class="weak-words-chips" id="weakWordsChips"></div>
   </section>
 
-  <section class="comparison-section">
+  <section class="comparison-section dashboard-section" id="comparisonSection">
     <h2>Passage Comparison</h2>
 
     <div class="legend">
       <span class="legend-item"><i class="dot correct"></i> Correct</span>
-      <span class="legend-item"><i class="dot incorrect"></i> Incorrect</span>
+      <span class="legend-item"><i class="dot incorrect"></i> Incorrect / Spelling</span>
       <span class="legend-item"><i class="dot missing"></i> Missing</span>
       <span class="legend-item"><i class="dot extra"></i> Extra</span>
-      <span class="legend-item"><i class="dot half"></i> Half Mistake</span>
+      <span class="legend-item"><i class="dot capitalization"></i> Capitalization (half)</span>
+      <span class="legend-item"><i class="dot transposition"></i> Transposition (half)</span>
       <span class="legend-item"><i class="dot untyped"></i> Untyped (time over)</span>
     </div>
+    <!-- MODULE 3 note: Punctuation-only and Space-only mistakes are not
+         separately classified by the existing diff engine (computeDiff()
+         only produces Correct / Wrong word / Capitalization / Transposition
+         / Missing / Extra) — adding those categories would mean modifying
+         computeDiff(), which is explicitly out of scope here, so no color
+         is shown for them rather than inventing one. -->
+    <p class="hero-sub" id="cmpUnsupportedNote">Punctuation-only and space-only mistakes aren't separately tracked by the current mistake engine — they currently fall under Correct/Incorrect above.</p>
     <div class="compare-grid">
       <div class="compare-col">
         <div class="pane-label">Original</div>
@@ -317,6 +418,467 @@
       </table>
       <p class="empty-note" id="noErrorsNote" hidden>No errors recorded — clean typing.</p>
     </div>
+  </section>
+
+  <!-- ============================================================
+       MODULE 2 — DETAILED MISTAKE LOG
+       Reuses r.diffRows (computeDiff()'s own, untouched output —
+       the same data already powering "Detailed Error Table" above)
+       as its only source of mistakes. No new diff engine, no new
+       mistake calculation. See renderDetailedMistakeLog() in
+       script.js for exactly which columns are existing data vs. the
+       one small lookup added for the Timestamp column.
+       Reuses the existing .error-table-section / .table-wrap /
+       .error-table / .empty-note classes — no new CSS.
+       ============================================================ -->
+  <section class="error-table-section dashboard-section" id="mistakeLogSection">
+    <h2>Detailed Mistake Log</h2>
+    <p class="hero-sub">Every mistake from the same final comparison used above, with word/character position and (when telemetry was captured) an approximate time.</p>
+    <div class="table-wrap">
+      <table class="error-table" id="mistakeLogTable">
+        <thead>
+          <tr>
+            <th>#</th><th>Expected</th><th>Typed</th><th>Mistake Type</th>
+            <th>Position</th><th>Word #</th><th>Char Index</th>
+            <th>Correction Status</th><th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody id="mistakeLogBody"></tbody>
+      </table>
+      <p class="empty-note" id="noMistakeLogNote" hidden>No mistakes recorded — clean typing.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MODULE 4 — MISTAKE CALCULATION + ERROR BREAKDOWN
+       Every number here is derived from fields the app already
+       computes (r.fullMistakes, r.halfMistakes, r.diffRows,
+       r.charsTyped, r.finalDiff.comparedCount) — see
+       renderMistakeBreakdown() in script.js for the exact formulas,
+       which deliberately mirror the SAME arithmetic shape the
+       existing accuracy% calculation already uses, rather than
+       inventing a new one. No new mistake classification.
+       Reuses .result-grid/.result-card and .table-wrap/.error-table
+       — no new layout primitives, only two new CSS rules for the
+       small percentage bar (see style.css).
+       ============================================================ -->
+  <section class="calc-section dashboard-section" id="mistakeBreakdownSection">
+    <h2>Mistake Calculation &amp; Error Breakdown</h2>
+    <div class="result-grid">
+      <div class="result-card highlight">
+        <span class="rc-label">Total Mistakes</span>
+        <span class="rc-value" id="mbTotalMistakes">0</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Full Mistakes</span>
+        <span class="rc-value" id="mbFullMistakes">0</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Half Mistakes</span>
+        <span class="rc-value" id="mbHalfMistakes">0</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Error Density</span>
+        <span class="rc-value" id="mbErrorDensity">0</span>
+        <span class="rc-note">per 100 characters</span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="error-table" id="mbBreakdownTable">
+        <thead>
+          <tr><th>Category</th><th>Count</th><th>% of Mistakes</th><th>Accuracy Contribution</th></tr>
+        </thead>
+        <tbody id="mbBreakdownBody"></tbody>
+      </table>
+      <p class="empty-note" id="mbNoMistakesNote" hidden>No mistakes recorded — clean typing.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MODULE 5 — PACE ANALYSIS
+       Reads Module 0's r.telemetry only (never written to). Speed-
+       over-time is bucketed from telemetry timestamps — a new but
+       purely presentation-layer aggregation, not a change to how
+       telemetry is captured. Average WPM shown is r.netWpm, the
+       already-computed final speed — not re-derived from telemetry,
+       to stay consistent with the one figure used everywhere else
+       in the app. Rendered with a single native <canvas> draw (no
+       animation loop, no external chart library), keeping the
+       project's zero-dependency / fully-offline design intact — see
+       renderPaceAnalysis() in script.js for details and the note on
+       why Chart.js specifically was not used.
+       ============================================================ -->
+  <section class="pace-section dashboard-section" id="paceSection">
+    <h2>Pace Analysis</h2>
+    <p class="hero-sub">Typing speed over the course of this attempt, from Module 0's keystroke telemetry.</p>
+    <div class="result-grid">
+      <div class="result-card">
+        <span class="rc-label">Peak Instant WPM</span>
+        <span class="rc-value" id="paPeakWpm">0</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Average WPM</span>
+        <span class="rc-value" id="paAvgWpm">0</span>
+        <span class="rc-note">Net WPM, same figure as above</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Pauses Detected</span>
+        <span class="rc-value" id="paPauseCount">0</span>
+        <span class="rc-note" id="paPauseThresholdNote"></span>
+      </div>
+    </div>
+    <div class="pace-chart-wrap">
+      <canvas id="paceChartCanvas"></canvas>
+      <p class="empty-note" id="paNoTelemetryNote" hidden>No telemetry was captured for this attempt, so no speed timeline is available.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MODULE 6 — CHARACTER PERFORMANCE TABLE
+       Built entirely from Module 0's r.telemetry via
+       buildCharacterPerformanceStats() (script.js) — no new capture,
+       no diff-engine involvement. charOutcome/latencyMs are the same
+       PRELIMINARY, per-keystroke fields documented in Module 0; this
+       table inherits that same live-approximation caveat, noted below.
+       Reuses .table-wrap/.error-table — no new CSS for the table.
+       ============================================================ -->
+  <section class="error-table-section dashboard-section" id="charPerfSection">
+    <h2>Character Performance Table</h2>
+    <p class="hero-sub">Per-character breakdown from this attempt's keystroke telemetry. Correct/Incorrect counts are the same live, best-effort telemetry classification described in Module 0 — not the final word-level diff engine.</p>
+    <div class="table-wrap">
+      <table class="error-table" id="charPerfTable">
+        <thead>
+          <tr>
+            <th>Character</th><th>Occurrences</th><th>Correct</th><th>Incorrect</th>
+            <th>Accuracy %</th><th>Avg Latency</th><th>Fastest</th><th>Slowest</th>
+          </tr>
+        </thead>
+        <tbody id="charPerfBody"></tbody>
+      </table>
+      <p class="empty-note" id="charPerfNoDataNote" hidden>No telemetry was captured for this attempt.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MODULE 7 — VISUAL KEYBOARD HEATMAP
+       Colors/tooltips are computed entirely from the SAME
+       buildCharacterPerformanceStats() output Module 6 already
+       produces (merged per physical key, case-insensitive — see
+       getMergedStatsForKey() in script.js) plus the shared
+       computeLatencyZoneThresholds() helper also used by Module 8.
+       No new statistics are collected here. Keys with zero
+       occurrences are shown neutral/unstyled rather than given a
+       fabricated color.
+       ============================================================ -->
+  <section class="error-table-section dashboard-section" id="keyboardHeatmapSection">
+    <h2>Visual Keyboard Heatmap</h2>
+    <p class="hero-sub">Keys are shaded by typing speed (green = fast, red = slow) and by how often each key was actually pressed. Hover a key for its exact stats.</p>
+    <div class="kb-heatmap" id="kbHeatmap"><!-- populated by JS: renderKeyboardHeatmap() --></div>
+    <p class="empty-note" id="kbHeatmapNoDataNote" hidden>No telemetry was captured for this attempt.</p>
+  </section>
+
+  <!-- ============================================================
+       MODULE 8 — SPEED ZONES & FAST BURSTS
+       Zones reuse the same computeLatencyZoneThresholds() helper as
+       Module 7 (tercile split of this attempt's own latencies — no
+       hardcoded speed assumption). Bursts are consecutive runs of
+       "fast zone" telemetry events. Pauses reuse Module 5's own
+       PACE_PAUSE_THRESHOLD_MS constant (not a new threshold) so the
+       two modules never disagree about what counts as a pause.
+       Reuses .result-grid/.result-card and Module 4's
+       .mb-bar-track/.mb-bar-fill percentage-bar CSS — no new bar CSS.
+       ============================================================ -->
+  <section class="calc-section dashboard-section" id="speedZonesSection">
+    <h2>Speed Zones &amp; Fast Bursts</h2>
+    <div class="result-grid">
+      <div class="result-card">
+        <span class="rc-label">🐢 Slow Zone</span>
+        <span class="rc-value" id="szSlowPct">0%</span>
+        <span class="rc-note" id="szSlowCount"></span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">🚶 Normal Zone</span>
+        <span class="rc-value" id="szNormalPct">0%</span>
+        <span class="rc-note" id="szNormalCount"></span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">⚡ Fast Zone</span>
+        <span class="rc-value" id="szFastPct">0%</span>
+        <span class="rc-note" id="szFastCount"></span>
+      </div>
+    </div>
+    <div class="result-grid">
+      <div class="result-card">
+        <span class="rc-label">Fastest Burst</span>
+        <span class="rc-value" id="szFastestBurst">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Longest Burst</span>
+        <span class="rc-value" id="szLongestBurst">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Average Burst Length</span>
+        <span class="rc-value" id="szAvgBurst">—</span>
+      </div>
+    </div>
+    <div class="pause-locations" id="szPauseLocations"><!-- populated by JS: renderSpeedZones() --></div>
+    <p class="empty-note" id="szNoDataNote" hidden>No telemetry was captured for this attempt.</p>
+  </section>
+
+  <!-- ============================================================
+       MODULE 9 — CONSISTENCY & EFFICIENCY
+       WPM Consistency reuses computePaceBuckets() (Module 5, locked)
+       directly for its instantWpm series — not re-bucketed here.
+       Avg/Longest Pause and Idle/Productive time reuse Module 5's own
+       PACE_PAUSE_THRESHOLD_MS constant. See renderConsistencyEfficiency()
+       in script.js for exactly which values are existing vs. newly
+       derived from them.
+       ============================================================ -->
+  <section class="calc-section dashboard-section" id="consistencySection">
+    <h2>Consistency &amp; Efficiency</h2>
+    <div class="result-grid">
+      <div class="result-card">
+        <span class="rc-label">WPM Consistency</span>
+        <span class="rc-value" id="ceWpmConsistency">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Accuracy Consistency</span>
+        <span class="rc-value" id="ceAccConsistency">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Rhythm Stability</span>
+        <span class="rc-value" id="ceRhythmStability">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Average Pause Duration</span>
+        <span class="rc-value" id="ceAvgPause">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Longest Pause</span>
+        <span class="rc-value" id="ceLongestPause">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Productive Typing Time</span>
+        <span class="rc-value" id="ceProductiveTime">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Idle Time</span>
+        <span class="rc-value" id="ceIdleTime">—</span>
+      </div>
+      <div class="result-card highlight">
+        <span class="rc-label">Efficiency</span>
+        <span class="rc-value" id="ceEfficiency">—</span>
+      </div>
+    </div>
+    <p class="empty-note" id="ceNoDataNote" hidden>No telemetry was captured for this attempt.</p>
+  </section>
+
+  <!-- ============================================================
+       MODULE 10 — FINGER PERFORMANCE
+       Reuses Module 6's buildCharacterPerformanceStats() and Module
+       7's getMergedStatsForKey() for every key's numbers — only new
+       addition is a static finger→key mapping (physical convention,
+       same category as Module 7's KEYBOARD_LAYOUT_ROWS, not
+       performance data).
+       ============================================================ -->
+  <section class="error-table-section dashboard-section" id="fingerPerfSection">
+    <h2>Finger Performance</h2>
+    <p class="hero-sub">Estimated workload per finger, from a standard touch-typing key map, using the same per-key stats as the Character Performance Table and Keyboard Heatmap above.</p>
+    <div class="table-wrap">
+      <table class="error-table" id="fingerPerfTable">
+        <thead>
+          <tr><th>Finger</th><th>Presses</th><th>Accuracy</th><th>Avg Latency</th><th>Contribution %</th><th>Most Problematic Key(s)</th></tr>
+        </thead>
+        <tbody id="fingerPerfBody"></tbody>
+      </table>
+      <p class="empty-note" id="fingerPerfNoDataNote" hidden>No telemetry was captured for this attempt.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MODULE 11 — LATENCY HISTOGRAM
+       Stats and bins are computed purely from Module 0's r.telemetry
+       latencyMs values (already-captured, read-only). Rendered with a
+       single native <canvas> bar draw, same reasoning as Module 5's
+       Pace Analysis chart — no Chart.js/CDN dependency, keeping this
+       fully-offline project offline. See renderLatencyHistogram() in
+       script.js.
+       ============================================================ -->
+  <section class="calc-section dashboard-section" id="latencyHistogramSection">
+    <h2>Latency Histogram</h2>
+    <div class="result-grid">
+      <div class="result-card">
+        <span class="rc-label">Average</span>
+        <span class="rc-value" id="lhAverage">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Median</span>
+        <span class="rc-value" id="lhMedian">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">95th Percentile</span>
+        <span class="rc-value" id="lhP95">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Fastest</span>
+        <span class="rc-value" id="lhFastest">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Slowest</span>
+        <span class="rc-value" id="lhSlowest">—</span>
+      </div>
+    </div>
+    <div class="pace-chart-wrap" id="lhChartWrap">
+      <canvas id="latencyHistogramCanvas"></canvas>
+      <p class="empty-note" id="lhNoDataNote" hidden>No telemetry was captured for this attempt.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MODULE 12 — STAMINA / QUARTER ANALYSIS
+       The test's own duration (from computePaceBuckets(), Module 5,
+       locked) is split into four equal time windows. Per-quarter
+       Net/Gross WPM and Accuracy reuse the same PRELIMINARY, live
+       telemetry charOutcome classification already documented in
+       Module 0/6/9 — not a re-run of the final diff engine. Pause
+       time per quarter reuses Module 5's PACE_PAUSE_THRESHOLD_MS and
+       Module 9's productivityPct() helper.
+       ============================================================ -->
+  <section class="error-table-section dashboard-section" id="staminaSection">
+    <h2>Stamina / Quarter Analysis</h2>
+    <p class="hero-sub">The attempt split into four equal time windows, to see whether speed and accuracy held up or dropped off.</p>
+    <div class="table-wrap">
+      <table class="error-table" id="staminaTable">
+        <thead>
+          <tr><th>Quarter</th><th>Net WPM</th><th>Gross WPM</th><th>Accuracy</th><th>Errors</th><th>Pause Time</th><th>Productivity</th></tr>
+        </thead>
+        <tbody id="staminaBody"></tbody>
+      </table>
+      <p class="empty-note" id="staminaNoDataNote" hidden>No telemetry was captured for this attempt.</p>
+    </div>
+    <p class="hero-sub" id="staminaTrendNote"></p>
+  </section>
+
+  <!-- ============================================================
+       MODULE 13 — WASTED TIME & PRODUCTIVITY
+       computeIdlePauseStats() (script.js) is a new, properly-shared
+       helper — it reuses Module 9's exact building blocks
+       (getCharacterEventsWithLatency, Module 5's own
+       PACE_PAUSE_THRESHOLD_MS and computePaceBuckets, Module 9's
+       productivityPct) rather than re-deriving idle/pause math from
+       scratch. NOTE: Module 9's Consistency & Efficiency dashboard
+       already shows very similar numbers (idle/productive time,
+       pause stats) — that overlap is real and worth knowing about;
+       it exists because Module 9's render function is locked and
+       never exposed its internal numbers for reuse, so this module
+       reuses the same underlying utilities but necessarily
+       recomputes the final idle/pause figures itself. See
+       computeIdlePauseStats() for the one place that happens.
+       ============================================================ -->
+  <section class="calc-section dashboard-section" id="wastedTimeSection">
+    <h2>Wasted Time &amp; Productivity</h2>
+    <div class="result-grid">
+      <div class="result-card">
+        <span class="rc-label">Total Idle Time</span>
+        <span class="rc-value" id="wtIdleTime">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Active Typing Time</span>
+        <span class="rc-value" id="wtActiveTime">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Longest Pause</span>
+        <span class="rc-value" id="wtLongestPause">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Number of Pauses</span>
+        <span class="rc-value" id="wtPauseCount">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Average Pause</span>
+        <span class="rc-value" id="wtAvgPause">—</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Wasted Time %</span>
+        <span class="rc-value" id="wtWastedPct">—</span>
+      </div>
+      <div class="result-card highlight">
+        <span class="rc-label">Productive Time %</span>
+        <span class="rc-value" id="wtProductivePct">—</span>
+      </div>
+    </div>
+    <div class="wt-bar-wrap">
+      <div class="wt-bar" id="wtBar">
+        <span class="wt-bar-active" id="wtBarActive"></span>
+        <span class="wt-bar-idle" id="wtBarIdle"></span>
+      </div>
+      <div class="wt-bar-legend">
+        <span><i class="dot" style="background:var(--accent,#4C7EFF)"></i> Active</span>
+        <span><i class="dot" style="background:#FF8A5B"></i> Idle</span>
+      </div>
+    </div>
+    <p class="empty-note" id="wtNoDataNote" hidden>No telemetry was captured for this attempt.</p>
+  </section>
+
+  <!-- ============================================================
+       MODULE 14 — OVERALL TYPING PERFORMANCE SCORE
+       Every component reuses an already-computed value: Accuracy is
+       r.accuracy itself (existing field, unchanged); Speed is
+       normalized against state.settings.qualifyWpm (the app's own
+       existing, user-configurable qualifying-speed setting —
+       categories.js); Consistency reuses Module 9's own shared
+       coefficientOfVariationPct/consistencyPctFromCV utilities;
+       Productivity directly calls Module 13's computeIdlePauseStats()
+       + Module 9's productivityPct(); Error Control reuses the same
+       error-density concept as Module 4 (r.fullMistakes/halfMistakes
+       over r.charsTyped). See computeOverallScore() in script.js for
+       the exact formula and weights — nothing here is hardcoded data,
+       only the (documented, visible) weighting constants are fixed,
+       same as any scoring rubric.
+       Percentile compares against this device's own past attempts via
+       the app's existing loadHistory() (localStorage) — not a
+       fabricated global population, since no such data exists in this
+       offline app.
+       ============================================================ -->
+  <section class="calc-section dashboard-section" id="overallScoreSection">
+    <h2>Overall Typing Performance Score</h2>
+    <div class="osp-summary">
+      <div class="osp-score-badge">
+        <span class="osp-score" id="ospScore">—</span>
+        <span class="osp-grade" id="ospGrade">—</span>
+      </div>
+      <div class="osp-percentile">
+        <span id="ospPercentile">—</span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="error-table" id="ospComponentTable">
+        <thead><tr><th>Component</th><th>Score</th><th>Weight</th></tr></thead>
+        <tbody id="ospComponentBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MODULE 16 — AI COACH (deterministic rules only, no external AI)
+       Every tip below is generated by simple if/else rules over
+       values already computed elsewhere in this file:
+       computeOverallScore() (Module 14) for strength/weakness/priority
+       list, getMistakeCategoryCounts() (a fresh grouping of the same
+       r.diffRows Module 4 already groups) for the most common mistake,
+       buildCharacterPerformanceStats()/getMergedStatsForKey() (Modules
+       6/7) for the weakest character and finger, computeStaminaScore()
+       (Module 14) for stamina advice. No network calls, no AI model,
+       no API key — see generateAiCoachTips() in script.js.
+       Reuses the existing .diagnostic-grid/.diagnostic-card classes
+       (already used by the app's original Diagnostic Report) — no new
+       CSS for the cards themselves.
+       ============================================================ -->
+  <section class="diagnostic-section dashboard-section" id="aiCoachSection">
+    <h2>AI Coach — Deep Analysis</h2>
+    <p class="hero-sub">Deterministic, rule-based coaching generated entirely from this attempt's own numbers above — no external AI service is used.</p>
+    <div class="diagnostic-grid" id="aiCoachGrid"><!-- populated by JS: renderAiCoach() --></div>
+    <p class="empty-note" id="aiCoachNoDataNote" hidden>Not enough data was captured for coaching tips.</p>
   </section>
 
 </main>
